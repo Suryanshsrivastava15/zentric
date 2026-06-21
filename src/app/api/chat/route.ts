@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 const SYSTEM_PROMPT = `You are Zentric AI, a helpful assistant integrated into the Zentric AI Growth Operating System.
 You help students, developers, and professionals with:
@@ -47,10 +47,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    const fallback = `I am Zentric AI! To enable real AI responses, add your **free** Gemini API key at https://aistudio.google.com/app/apikey and set it as GEMINI_API_KEY in your Vercel environment variables.\n\nYour message: "${message}"`;
+    const fallback = `I am Zentric AI! AI responses require a Groq API key to be configured.\n\nYour message: "${message}"`;
     await prisma.message.create({
       data: { conversationId, role: "assistant", content: fallback },
     });
@@ -60,23 +60,24 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const groq = new Groq({ apiKey });
 
     const history = conversation.messages.map((m: { role: string; content: string }) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
+      role: m.role as "user" | "assistant",
+      content: m.content,
     }));
 
-    const chat = model.startChat({
-      history: [
-        { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-        { role: "model", parts: [{ text: "Understood! I am Zentric AI, ready to help." }] },
+    const groqStream = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
         ...history,
+        { role: "user", content: message.trim() },
       ],
+      temperature: 0.7,
+      max_tokens: 1024,
+      stream: true,
     });
-
-    const result = await chat.sendMessageStream(message.trim());
 
     const encoder = new TextEncoder();
     let fullContent = "";
@@ -84,8 +85,8 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
+          for await (const chunk of groqStream) {
+            const text = chunk.choices[0]?.delta?.content ?? "";
             if (text) {
               fullContent += text;
               controller.enqueue(encoder.encode(text));
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch {
-    const errorMsg = "Sorry, I encountered an error connecting to Gemini AI. Please try again.";
+    const errorMsg = "Sorry, I encountered an error connecting to the AI. Please try again.";
     await prisma.message.create({
       data: { conversationId, role: "assistant", content: errorMsg },
     });
