@@ -2,21 +2,5 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "env": {
-    "NODE_ENV": "production",
-    "DATABASE_URL": "@zentric_database_url",
-    "NEXTAUTH_SECRET": "@zentric_nextauth_secret",
-    "NEXTAUTH_URL": "@zentric_nextauth_url",
-    "OPENAI_API_KEY": "@zentric_openai_api_key"
-  },
-  "build": {
-    "env": {
-      "DATABASE_URL": "@zentric_database_url",
-      "NEXTAUTH_SECRET": "@zentric_nextauth_secret",
-      "NEXTAUTH_URL": "@zentric_nextauth_url",
-      "OPENAI_API_KEY": "@zentric_openai_api_key"
-    }
-  },
-  "regions": ["sfo1"],
-  "public": false
+  "regions": ["sfo1"]
 }
