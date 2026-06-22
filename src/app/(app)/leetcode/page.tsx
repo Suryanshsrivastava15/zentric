@@ -63,7 +63,8 @@ interface LeetCodeData {
   }[];
   dailyChallenge: DailyChallenge | null;
   suggestions: SuggestedProblem[];
-  recommendedDifficulty: string;
+  lastSolvedId: number;
+  lastSolvedTitle: string;
 }
 
 const difficultyColor = {
@@ -461,16 +462,18 @@ export default function LeetCodePage() {
         </Card>
       )}
 
-      {/* Continue Solving — Suggestions */}
+      {/* Continue Solving — Next problems from where left off */}
       {data.suggestions.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Lightbulb className="w-4 h-4 text-yellow-400" />
               Continue Solving
-              <Badge variant="outline" className="ml-1 text-xs border-white/10 text-gray-400">
-                Recommended: {data.recommendedDifficulty}
-              </Badge>
+              {data.lastSolvedId > 0 && (
+                <Badge variant="outline" className="ml-1 text-xs border-white/10 text-gray-400">
+                  Next after #{data.lastSolvedId}
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -96,21 +96,42 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Step 2: Determine recommended difficulty based on solved counts
-    const acCounts: { difficulty: string; count: number }[] =
-      profileRes.data.matchedUser.submitStats.acSubmissionNum;
-    const easySolved = acCounts.find((c) => c.difficulty === "Easy")?.count ?? 0;
-    const mediumSolved = acCounts.find((c) => c.difficulty === "Medium")?.count ?? 0;
-    const recommendedDifficulty =
-      easySolved < 50 ? "EASY" : mediumSolved < 100 ? "MEDIUM" : "HARD";
+    const recentSubs: { id: string; title: string; titleSlug: string; timestamp: string }[] =
+      recentRes.data?.recentAcSubmissionList ?? [];
 
-    // Step 3: Fetch suggested problems at recommended difficulty
-    const recentSlugs = new Set(
-      (recentRes.data?.recentAcSubmissionList ?? []).map(
-        (s: { titleSlug: string }) => s.titleSlug
-      )
-    );
+    // Step 2: Find the highest problem number recently solved
+    let lastSolvedId = 0;
+    let lastSolvedTitle = "";
+    if (recentSubs.length > 0) {
+      try {
+        // Fetch frontendQuestionId for all recent submissions in parallel (max 5)
+        const slugsToCheck = recentSubs.slice(0, 5).map((s) => s.titleSlug);
+        const idResults = await Promise.all(
+          slugsToCheck.map((slug) =>
+            lcFetch(
+              `query questionData($titleSlug: String!) {
+                question(titleSlug: $titleSlug) {
+                  questionFrontendId
+                }
+              }`,
+              { titleSlug: slug }
+            ).catch(() => null)
+          )
+        );
+        // Find the highest problem number among recent solved
+        idResults.forEach((res, i) => {
+          const id = parseInt(res?.data?.question?.questionFrontendId ?? "0");
+          if (id > lastSolvedId) {
+            lastSolvedId = id;
+            lastSolvedTitle = recentSubs[i]?.title ?? "";
+          }
+        });
+      } catch {
+        // fallback: start from beginning
+      }
+    }
 
+    // Step 3: Fetch next 5 problems after the last solved problem number
     const suggestRes = await lcFetch(
       `query problemsetQuestionList($limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
         problemsetQuestionList: questionList(
@@ -133,7 +154,7 @@ export async function GET(req: NextRequest) {
           }
         }
       }`,
-      { limit: 50, skip: 0, filters: { difficulty: recommendedDifficulty } }
+      { limit: 15, skip: lastSolvedId, filters: {} }
     );
 
     const allSuggestions: {
@@ -146,18 +167,20 @@ export async function GET(req: NextRequest) {
       topicTags: { name: string; slug: string }[];
     }[] = suggestRes.data?.problemsetQuestionList?.questions ?? [];
 
-    // Filter out paid and recently solved
+    // Filter out paid problems, take next 5
+    const recentSlugs = new Set(recentSubs.map((s) => s.titleSlug));
     const suggestions = allSuggestions
       .filter((q) => !q.paidOnly && !recentSlugs.has(q.titleSlug))
-      .slice(0, 10);
+      .slice(0, 5);
 
     return NextResponse.json({
       user: profileRes.data.matchedUser,
       allCounts: profileRes.data.allQuestionsCount,
-      recentSubmissions: recentRes.data?.recentAcSubmissionList ?? [],
+      recentSubmissions: recentSubs,
       dailyChallenge: dailyRes.data?.activeDailyCodingChallengeQuestion ?? null,
       suggestions,
-      recommendedDifficulty: recommendedDifficulty.charAt(0) + recommendedDifficulty.slice(1).toLowerCase(),
+      lastSolvedId,
+      lastSolvedTitle,
     });
   } catch {
     return NextResponse.json(
