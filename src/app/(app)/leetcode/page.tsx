@@ -95,6 +95,7 @@ export default function LeetCodePage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
+      setLoading(false);
       setSubmitting(false);
       setRefreshing(false);
     }
