@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Palette,
   Info,
+  Code2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ interface SettingsData {
     openaiApiKey?: string | null;
     displayName?: string | null;
     bio?: string | null;
+    leetcodeUsername?: string | null;
   };
   user: {
     name?: string | null;
@@ -46,6 +48,7 @@ export default function SettingsPage() {
     bio: "",
     openaiApiKey: "",
     theme: "dark",
+    leetcodeUsername: "",
   });
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function SettingsPage() {
           bio: d.settings?.bio || "",
           openaiApiKey: d.settings?.openaiApiKey || "",
           theme: d.settings?.theme || "dark",
+          leetcodeUsername: d.settings?.leetcodeUsername || "",
         });
         setLoading(false);
       });
@@ -208,6 +212,38 @@ export default function SettingsPage() {
                 >
                   {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* LeetCode Integration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Code2 className="w-4 h-4 text-orange-400" />
+              LeetCode Integration
+            </CardTitle>
+            <CardDescription>Connect your public LeetCode profile to track progress</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-start gap-2">
+              <Info className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-orange-300">
+                Enter your LeetCode username to track solved problems, stats, and recent submissions. Your profile must be <strong>public</strong> on LeetCode.
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="leetcodeUsername">LeetCode Username</Label>
+              <div className="relative">
+                <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Input
+                  id="leetcodeUsername"
+                  placeholder="e.g. suryansh15"
+                  value={form.leetcodeUsername}
+                  onChange={(e) => setForm({ ...form, leetcodeUsername: e.target.value })}
+                  className="pl-10"
+                />
               </div>
             </div>
           </CardContent>

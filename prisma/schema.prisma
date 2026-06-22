@@ -128,11 +128,12 @@ model Message {
 }
 
 model UserSettings {
-  id           String  @id @default(cuid())
-  userId       String  @unique
-  theme        String  @default("dark")
-  openaiApiKey String?
-  displayName  String?
-  bio          String?
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  theme             String  @default("dark")
+  openaiApiKey      String?
+  displayName       String?
+  bio               String?
+  leetcodeUsername  String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

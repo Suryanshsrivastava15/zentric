@@ -15,6 +15,7 @@ import {
   Zap,
   Menu,
   X,
+  Code2,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Planner", href: "/planner", icon: CheckSquare },
   { name: "Study Tracker", href: "/study", icon: BookOpen },
+  { name: "LeetCode", href: "/leetcode", icon: Code2 },
   { name: "Notes", href: "/notes", icon: FileText },
   { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Agents", href: "/agents", icon: Bot },

@@ -42,12 +42,14 @@ export async function PATCH(req: NextRequest) {
       openaiApiKey: body.openaiApiKey ?? null,
       displayName: body.displayName ?? null,
       bio: body.bio ?? null,
+      leetcodeUsername: body.leetcodeUsername ?? null,
     },
     update: {
       theme: body.theme ?? undefined,
       openaiApiKey: body.openaiApiKey !== undefined ? body.openaiApiKey : undefined,
       displayName: body.displayName !== undefined ? body.displayName : undefined,
       bio: body.bio !== undefined ? body.bio : undefined,
+      leetcodeUsername: body.leetcodeUsername !== undefined ? body.leetcodeUsername : undefined,
     },
   });
 
