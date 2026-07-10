@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordCoachEvent } from "@/lib/ai-coach";
 
 export async function PATCH(
   req: NextRequest,
@@ -32,6 +33,17 @@ export async function PATCH(
       completed: body.completed !== undefined ? body.completed : task.completed,
     },
   });
+
+  if (!task.completed && updated.completed) {
+    await recordCoachEvent(session.user.id, {
+      type: "task_completed",
+      module: "Planner",
+      title: `Completed task: ${updated.title}`,
+      detail: "Planner progress updated automatically.",
+      impact: updated.priority === "high" ? 3 : 2,
+      metadata: { taskId: updated.id, priority: updated.priority },
+    });
+  }
 
   return NextResponse.json(updated);
 }

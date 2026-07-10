@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { analyzeCareerProfile } from "@/lib/career-engine";
 
 const LEETCODE_GQL = "https://leetcode.com/graphql/";
 
@@ -8,6 +9,49 @@ type TaskRecord = Awaited<ReturnType<typeof prisma.task.findMany>>[number];
 type NoteRecord = Awaited<ReturnType<typeof prisma.note.findMany>>[number];
 type StudyTopicRecord = Awaited<ReturnType<typeof prisma.studyTopic.findMany>>[number];
 type GoalRecord = Awaited<ReturnType<typeof prisma.goal.findMany>>[number];
+
+type ProgressEvent = {
+  id: string;
+  type: string;
+  module: string;
+  title: string;
+  detail: string | null;
+  impact: number;
+  metadata: unknown;
+  createdAt: Date;
+};
+
+type PracticeProgressRecord = {
+  id: string;
+  questionId: string;
+  completedAt: Date;
+  studyTopicId: string;
+};
+
+type InterviewSessionRecord = {
+  id: string;
+  status: string;
+  averageScore: number | null;
+  report: unknown;
+  updatedAt: Date;
+};
+
+type CareerProfileRecord = Parameters<typeof analyzeCareerProfile>[0];
+
+const dashboardDb = prisma as typeof prisma & {
+  careerProfile: {
+    findUnique(args: unknown): Promise<CareerProfileRecord | null>;
+  };
+  studyPracticeProgress: {
+    findMany(args: unknown): Promise<PracticeProgressRecord[]>;
+  };
+  coachEvent: {
+    findMany(args: unknown): Promise<ProgressEvent[]>;
+  };
+  interviewSession: {
+    findMany(args: unknown): Promise<InterviewSessionRecord[]>;
+  };
+};
 
 type LeetCodeStats = {
   username: string;
@@ -127,12 +171,20 @@ function buildGrowthEngine({
   studyTopics,
   goals,
   leetcode,
+  events = [],
+  practiceProgress = [],
+  interviewSessions = [],
+  careerProfile = null,
 }: {
   tasks: TaskRecord[];
   notes: NoteRecord[];
   studyTopics: StudyTopicRecord[];
   goals: GoalRecord[];
   leetcode: LeetCodeStats | null;
+  events?: ProgressEvent[];
+  practiceProgress?: PracticeProgressRecord[];
+  interviewSessions?: InterviewSessionRecord[];
+  careerProfile?: CareerProfileRecord | null;
 }) {
   const completedTasks = tasks.filter((task) => task.completed);
   const pendingTasks = tasks.filter((task) => !task.completed);
@@ -160,6 +212,168 @@ function buildGrowthEngine({
   const recentNotes = notes.filter((note) => note.updatedAt >= recentCutoff);
   const recentCompletedTasks = completedTasks.filter((task) => task.updatedAt >= recentCutoff);
   const recentStudyUpdates = studyTopics.filter((topic) => topic.updatedAt >= recentCutoff);
+  const recentEvents = events.filter((event) => event.createdAt >= recentCutoff);
+  const hasCareerProfileEvidence = Boolean(
+    careerProfile?.dreamRole?.trim() ||
+      careerProfile?.targetCompany?.trim() ||
+      careerProfile?.resumeText?.trim() ||
+      careerProfile?.skillsText?.trim() ||
+      careerProfile?.projectsText?.trim(),
+  );
+  const hasGrowthEvidence =
+    tasks.length > 0 ||
+    notes.length > 0 ||
+    studyTopics.length > 0 ||
+    goals.length > 0 ||
+    events.length > 0 ||
+    practiceProgress.length > 0 ||
+    interviewSessions.length > 0 ||
+    hasCareerProfileEvidence ||
+    Boolean(leetcode);
+
+  if (!hasGrowthEvidence) {
+    const onboardingBreakdown = [
+      { label: "Goal Setup", value: 0, color: "#60a5fa", source: "AI Coach onboarding" },
+      { label: "Learning Plan", value: 0, color: "#a78bfa", source: "Generated roadmap" },
+      { label: "Practice", value: 0, color: "#22d3ee", source: "Study Tracker + Coding Hub" },
+      { label: "Second Brain", value: 0, color: "#34d399", source: "Learning notes and recap memory" },
+      { label: "Career Proof", value: 0, color: "#f472b6", source: "Resume, projects and interview evidence" },
+    ];
+
+    return {
+      currentMission: "Set your growth mission in AI Coach",
+      growthScore: 0,
+      currentReadiness: "Waiting for mission",
+      estimatedDaysRemaining: 0,
+      estimatedStudyHoursToday: 0,
+      readinessIncrease: 0,
+      recommendations: [
+        "Open AI Coach and enter your goal",
+        "Add your current stage and target date",
+        "Generate your first roadmap",
+        "Sync today's mission to Planner",
+      ],
+      missionProgress: {
+        mission: "Set your dream mission in AI Coach",
+        overallProgress: 0,
+        breakdown: onboardingBreakdown,
+      },
+      companyReadiness: [
+        {
+          company: "Dream Mission",
+          readiness: 0,
+          weakest: "Goal setup",
+          prepTime: "Set goal first",
+          missing: ["Goal", "Stage", "Deadline"],
+          roadmap: [
+            "Open AI Coach and define your target.",
+            "Add current stage, available study time, and target date.",
+            "Generate your first roadmap and daily mission.",
+          ],
+        },
+      ],
+      growthPlan: [
+        { time: "Now", title: "Set Your Growth Mission", duration: "5 min", priority: "Critical", impact: "+10%", href: "/ai-coach" },
+        { time: "Next", title: "Generate Roadmap", duration: "5 min", priority: "High", impact: "+8%", href: "/ai-coach" },
+        { time: "After", title: "Sync Planner", duration: "3 min", priority: "High", impact: "+5%", href: "/planner" },
+      ],
+      coachSignals: [
+        { insight: "Zentric needs your goal before it can personalize the dashboard.", action: "Set goal", href: "/ai-coach" },
+        { insight: "After AI Coach setup, Planner, Learning Mode, Second Brain, and Career Hub will connect automatically.", action: "Start", href: "/ai-coach" },
+      ],
+      knowledgeRetention: [
+        { label: "Retention Score", value: "0%" },
+        { label: "Topics Forgotten", value: "0" },
+        { label: "Topics To Revise", value: "0" },
+        { label: "Flashcards Due Today", value: "0" },
+        { label: "Revision Streak", value: "0 days" },
+      ],
+      learningAnalytics: [
+        { label: "Topics Mastered", value: "0" },
+        { label: "Topics In Progress", value: "0" },
+        { label: "Weakest Topic", value: "Goal not set" },
+        { label: "Longest Learning Streak", value: "0 days" },
+        { label: "Most Consistent Week", value: "Start today" },
+        { label: "Learning Velocity", value: "+0%" },
+      ],
+      leetcodeInsights: [
+        { label: "Problems Solved", value: "Connect profile" },
+        { label: "Current Streak", value: "Not connected" },
+        { label: "Contest Rating", value: "No rating yet" },
+        { label: "Strongest Pattern", value: "After practice" },
+        { label: "Weakest Pattern", value: "After practice" },
+        { label: "Acceptance Rate", value: "Sync LeetCode" },
+        { label: "Predicted Rating in 30 days", value: "After sync" },
+        { label: "Target readiness", value: "Mission 0%" },
+      ],
+      secondBrainSummary: [
+        { label: "Notes Created", value: "0" },
+        { label: "Knowledge Connections", value: "0" },
+        { label: "Flashcards Generated", value: "0" },
+        { label: "Interview Notes", value: "0" },
+        { label: "AI Summaries", value: "0" },
+        { label: "Recent Learning", value: "No recent note yet" },
+      ],
+      careerProgress: [
+        { label: "Resume Score", value: 0 },
+        { label: "ATS Score", value: 0 },
+        { label: "Projects Completed", value: 0 },
+        { label: "GitHub Activity", value: 0 },
+        { label: "LinkedIn Optimization", value: 0 },
+        { label: "Interview Readiness", value: 0 },
+      ],
+      focus: {
+        topic: "AI Coach Setup",
+        priority: "High",
+        estimatedTime: "5 min",
+        reason: "Zentric needs your mission before it can decide today's best action.",
+      },
+      motivation: "Start by setting one clear mission. Zentric will turn it into a roadmap, planner, learning sessions, and career proof.",
+      recentAchievements: ["Account created", "Zentric is ready to build your growth system"],
+      scoreEvidence: {
+        taskScore: 0,
+        studyScore: 0,
+        codingScore: 0,
+        leetcodeScore: 0,
+        connectedCodingScore: 0,
+        learningQualityScore: 0,
+        secondBrainScore: 0,
+        resumeCareer: "waiting for Career Hub data",
+        progressEvents: 0,
+        learningSteps: 0,
+        interviews: 0,
+      },
+    };
+  }
+  const learningStepEvents = events.filter((event) => event.type === "learning_step_completed");
+  const codingPassedEvents = events.filter((event) =>
+    ["coding_run_passed", "coding_problem_solved", "study_question_set_completed"].includes(event.type),
+  );
+  const noteMemoryEvents = events.filter((event) => event.type === "note_created" || event.type === "note_updated");
+  const interviewCompletedEvents = events.filter((event) => event.type === "interview_simulation_completed");
+  const learningQualityScores = learningStepEvents
+    .map((event) => {
+      const metadata = event.metadata as { score?: unknown } | null;
+      const score = Number(metadata?.score);
+      return Number.isFinite(score) ? score : null;
+    })
+    .filter((score): score is number => score !== null);
+  const codingQualityScores = events
+    .filter((event) => event.type === "coding_run_passed" || event.type === "coding_run_failed")
+    .map((event) => {
+      const metadata = event.metadata as { score?: unknown } | null;
+      const score = Number(metadata?.score);
+      return Number.isFinite(score) ? score : null;
+    })
+    .filter((score): score is number => score !== null);
+  const learningSignalScore = clamp(average(learningQualityScores, learningStepEvents.length ? 65 : 0));
+  const completedInterviewSessions = interviewSessions.filter((session) => session.status === "completed");
+  const averageInterviewSessionScore = average(
+    completedInterviewSessions
+      .map((session) => session.averageScore)
+      .filter((score): score is number => typeof score === "number"),
+    0,
+  );
 
   const taskScore = percent(completedTasks.length, tasks.length, tasks.length ? 0 : 35);
   const goalScore = clamp(
@@ -196,7 +410,8 @@ function buildGrowthEngine({
   const secondBrainScore = clamp(
     Math.min(notes.length, 20) * 3 +
       Math.min(recentNotes.length, 8) * 4 +
-      Math.min(noteCategoryCoverage, 5) * 8,
+      Math.min(noteCategoryCoverage, 5) * 8 +
+      Math.min(noteMemoryEvents.length, 12) * 1.5,
   );
   const leetcodeScore = leetcode
     ? clamp(
@@ -207,6 +422,9 @@ function buildGrowthEngine({
       )
     : dsaStudyScore;
   const codingScore = clamp(leetcode ? leetcodeScore * 0.75 + dsaStudyScore * 0.25 : dsaStudyScore);
+  const practiceProgressScore = clamp(Math.min(practiceProgress.length, 75) * 1.2 + Math.min(codingPassedEvents.length, 40) * 1.4);
+  const codingActivityScore = clamp(average(codingQualityScores, codingPassedEvents.length ? 70 : 0));
+  const connectedCodingScore = clamp(codingScore * 0.62 + practiceProgressScore * 0.24 + codingActivityScore * 0.14);
 
   const projectNotes = notes.filter((note) => note.category === "project");
   const projectTasks = tasks.filter((task) => includesAny(`${task.title} ${task.description ?? ""}`, ["project", "portfolio", "github"]));
@@ -221,9 +439,15 @@ function buildGrowthEngine({
     (value) => includesAny(value, ["resume", "ats", "linkedin", "cv"]),
   );
   const interviewNotes = notes.filter((note) => note.category === "interview");
-  const resumeScore = clamp(35 + Math.min(resumeSignals.length, 8) * 7 + Math.min(interviewNotes.length, 5) * 3);
+  const careerAnalysis = analyzeCareerProfile(careerProfile);
+  const resumeScore = careerAnalysis.resumeScore ?? clamp(35 + Math.min(resumeSignals.length, 8) * 7 + Math.min(interviewNotes.length, 5) * 3);
   const interviewScore = clamp(
-    codingScore * 0.4 + csScore * 0.25 + resumeScore * 0.15 + Math.min(interviewNotes.length, 10) * 3,
+    connectedCodingScore * 0.34 +
+      csScore * 0.2 +
+      resumeScore * 0.13 +
+      Math.min(interviewNotes.length, 10) * 2.5 +
+      Math.min(interviewCompletedEvents.length, 8) * 4 +
+      averageInterviewSessionScore * 0.13,
   );
   const behavioralScore = clamp(
     35 +
@@ -236,7 +460,7 @@ function buildGrowthEngine({
   );
 
   const missionBreakdown = [
-    { label: "Coding", value: codingScore, color: "#60a5fa", source: leetcode ? "LeetCode + Study Tracker" : "Study Tracker proxy" },
+    { label: "Coding", value: connectedCodingScore, color: "#60a5fa", source: leetcode ? "LeetCode + Coding Hub + Study Tracker" : "Coding Hub + Study Tracker" },
     { label: "CS Fundamentals", value: csScore, color: "#a78bfa", source: "Study Tracker topics" },
     { label: "Projects", value: projectScore, color: "#22d3ee", source: "Project notes, goals and tasks" },
     { label: "Resume", value: resumeScore, color: "#34d399", source: "Resume/ATS/LinkedIn signals" },
@@ -245,7 +469,7 @@ function buildGrowthEngine({
   ];
 
   const weightedGrowthScore = clamp(
-    codingScore * 0.24 +
+    connectedCodingScore * 0.24 +
       csScore * 0.17 +
       projectScore * 0.14 +
       resumeScore * 0.14 +
@@ -256,10 +480,18 @@ function buildGrowthEngine({
   );
   const weakestArea = [...missionBreakdown].sort((a, b) => a.value - b.value)[0]!;
   const strongestArea = [...missionBreakdown].sort((a, b) => b.value - a.value)[0]!;
+  const careerRole = careerProfile?.dreamRole?.trim();
+  const careerCompany = careerProfile?.targetCompany?.trim();
+  const hasCareerMission =
+    Boolean(careerRole && careerRole !== "Your Dream Role") ||
+    Boolean(careerCompany && careerCompany !== "Your Target Company");
   const currentMission =
-    goals.find((goal) => includesAny(goal.title, ["google", "sde", "software", "intern", "engineer"]))?.title ??
     goals[0]?.title ??
-    "Become Software Engineer at Google";
+    (hasCareerMission
+      ? [careerRole && careerRole !== "Your Dream Role" ? careerRole : null, careerCompany && careerCompany !== "Your Target Company" ? `at ${careerCompany}` : null]
+          .filter(Boolean)
+          .join(" ")
+      : "Set your growth mission in AI Coach");
   const readinessLabel =
     weightedGrowthScore >= 85
       ? "Interview ready"
@@ -284,22 +516,33 @@ function buildGrowthEngine({
   const recommendations = [
     weakestArea.label === "Coding" ? "Solve 2 Graph problems" : `Improve ${weakestArea.label}`,
     csScore < 70 ? "Complete Operating Systems revision" : "Review CS fundamentals flashcards",
-    codingScore < 75 ? "Revise Dynamic Programming" : "Maintain coding streak",
+    connectedCodingScore < 75 ? "Revise Dynamic Programming" : "Maintain coding streak",
     resumeScore < 75 ? "Improve Resume Projects" : "Add one achievement to Second Brain",
   ];
 
-  const companyProfiles = [
-    { company: "Google", base: 0, topics: ["Advanced Graphs", "Dynamic Programming", "Mock interviews"] },
-    { company: "Amazon", base: 5, topics: ["Leadership Principles", "Trees", "Behavioral drills"] },
-    { company: "Microsoft", base: -1, topics: ["OOP design", "DP", "System design basics"] },
-    { company: "Atlassian", base: -4, topics: ["Frontend architecture", "Product thinking", "Collaboration tooling"] },
-    { company: "Adobe", base: -6, topics: ["Project storytelling", "OS revision", "Portfolio polish"] },
-    { company: "Uber", base: -8, topics: ["Distributed systems", "Graphs", "Rate limiting"] },
-  ];
+  const targetCompany = careerCompany && careerCompany !== "Your Target Company" ? careerCompany : null;
+  const roleSpecificTopics = includesAny(careerRole ?? "", ["upsc", "ias", "civil"])
+    ? ["Current affairs depth", "GS revision", "Mock tests"]
+    : includesAny(careerRole ?? "", ["jee", "neet", "gate", "cat"])
+      ? ["Core syllabus mastery", "Timed practice", "Revision accuracy"]
+      : includesAny(careerRole ?? "", ["design", "ui", "ux"])
+        ? ["Portfolio case studies", "Design critique", "Product thinking"]
+        : ["Target skills", "Project proof", "Mock interviews"];
+  const companyProfiles = targetCompany
+    ? [
+        { company: targetCompany, base: 0, topics: roleSpecificTopics },
+        { company: "Dream Role", base: -3, topics: ["Role fundamentals", "Project proof", "Interview practice"] },
+        { company: "Current Mission", base: -5, topics: ["Weakest area", "Revision loop", "Daily execution"] },
+      ]
+    : [
+        { company: "Dream Mission", base: 0, topics: ["Set target role", "Upload resume/proof", "Start daily mission"] },
+        { company: "Learning Readiness", base: -3, topics: ["Roadmap setup", "Study tracker", "Revision loop"] },
+        { company: "Career Readiness", base: -5, topics: ["Resume proof", "Interview practice", "Project evidence"] },
+      ];
 
   const companyReadiness = companyProfiles.map((profile) => {
     const readiness = clamp(
-      codingScore * 0.32 +
+        connectedCodingScore * 0.32 +
         csScore * 0.2 +
         projectScore * 0.14 +
         resumeScore * 0.14 +
@@ -308,7 +551,7 @@ function buildGrowthEngine({
         profile.base,
     );
     const missing = profile.topics.filter((topic) => {
-      if (includesAny(topic, ["graph", "dynamic", "dp"])) return codingScore < 78;
+      if (includesAny(topic, ["graph", "dynamic", "dp"])) return connectedCodingScore < 78;
       if (includesAny(topic, ["system", "os", "distributed", "rate"])) return csScore < 75;
       if (includesAny(topic, ["project", "portfolio"])) return projectScore < 75;
       if (includesAny(topic, ["behavioral", "leadership"])) return behavioralScore < 75;
@@ -349,7 +592,7 @@ function buildGrowthEngine({
     },
     {
       time: "10:00",
-      title: codingScore < 75 ? "Solve Medium Graph Question" : "Solve Targeted Coding Challenge",
+      title: connectedCodingScore < 75 ? "Practice Your Weakest Topic" : "Solve Targeted Challenge",
       duration: "60 min",
       priority: "Critical",
       impact: "+1.1%",
@@ -396,8 +639,8 @@ function buildGrowthEngine({
     },
     {
       insight: leetcode
-        ? `Your LeetCode profile has ${leetcode.totalSolved} solved problems. Medium Graph practice is the fastest next lift.`
-        : "Connect your LeetCode username to turn coding readiness into a live score.",
+        ? `Your LeetCode profile has ${leetcode.totalSolved} solved problems and Zentric has ${practiceProgress.length} tracked Coding Hub completions.`
+        : `Coding Hub has ${practiceProgress.length} tracked study completions. Connect LeetCode for an external signal too.`,
       action: leetcode ? "Practice" : "Connect",
       href: "/leetcode",
     },
@@ -419,7 +662,8 @@ function buildGrowthEngine({
     100 -
       Math.min(45, dueTopics.length * 5) -
       Math.min(25, completedTopics.filter((topic) => daysAgo(topic.updatedAt) >= 10).length * 4) +
-      Math.min(20, recentStudyUpdates.length * 3),
+      Math.min(16, recentStudyUpdates.length * 3) +
+      Math.min(14, learningStepEvents.length * 2 + learningSignalScore / 12),
   );
 
   const noteCategories = {
@@ -467,7 +711,16 @@ function buildGrowthEngine({
       { label: "Weakest Topic", value: focusTopic },
       { label: "Longest Learning Streak", value: `${Math.min(30, recentStudyUpdates.length + completedTopics.length)} days` },
       { label: "Most Consistent Week", value: recentStudyUpdates.length >= 5 ? "This week" : "Building" },
-      { label: "Learning Velocity", value: `+${Math.max(1, recentStudyUpdates.length * 3 + recentCompletedTasks.length * 2)}%` },
+      {
+        label: "Learning Velocity",
+        value: `+${Math.max(
+          1,
+          recentStudyUpdates.length * 3 +
+            recentCompletedTasks.length * 2 +
+            learningStepEvents.length +
+            Math.round(learningSignalScore / 25),
+        )}%`,
+      },
     ],
     leetcodeInsights: [
       { label: "Problems Solved", value: leetcode ? String(leetcode.totalSolved) : "Connect profile" },
@@ -478,15 +731,15 @@ function buildGrowthEngine({
       { label: "Acceptance Rate", value: leetcode?.acceptanceRate ? `${leetcode.acceptanceRate}%` : "Sync LeetCode" },
       {
         label: "Predicted Rating in 30 days",
-        value: leetcode?.contestRating ? String(leetcode.contestRating + Math.max(35, Math.round((100 - codingScore) * 2.2))) : "After sync",
+        value: leetcode?.contestRating ? String(leetcode.contestRating + Math.max(35, Math.round((100 - connectedCodingScore) * 2.2))) : "After sync",
       },
-      { label: "Company-wise readiness", value: `Google ${companyReadiness[0]?.readiness ?? weightedGrowthScore}%` },
+      { label: "Target readiness", value: `${companyReadiness[0]?.company ?? "Mission"} ${companyReadiness[0]?.readiness ?? weightedGrowthScore}%` },
     ],
     secondBrainSummary: [
       { label: "Notes Created", value: String(notes.length) },
       { label: "Knowledge Connections", value: String(Math.max(0, notes.length * 2 + noteCategoryCoverage * 4)) },
-      { label: "Flashcards Generated", value: String(Math.max(0, notes.length * 3 + completedTopics.length)) },
-      { label: "Interview Notes", value: String(noteCategories.interview) },
+      { label: "Flashcards Generated", value: String(Math.max(0, notes.length * 3 + completedTopics.length + noteMemoryEvents.length)) },
+      { label: "Interview Notes", value: String(noteCategories.interview + completedInterviewSessions.length) },
       { label: "AI Summaries", value: String(notes.filter((note) => note.content.length > 400).length) },
       { label: "Recent Learning", value: recentNotes[0]?.title ?? "No recent note yet" },
     ],
@@ -494,7 +747,7 @@ function buildGrowthEngine({
       { label: "Resume Score", value: resumeScore },
       { label: "ATS Score", value: clamp(resumeScore * 0.9 + projectScore * 0.1) },
       { label: "Projects Completed", value: projectScore },
-      { label: "GitHub Activity", value: clamp(projectScore * 0.7 + codingScore * 0.3) },
+      { label: "GitHub Activity", value: clamp(projectScore * 0.7 + connectedCodingScore * 0.3) },
       { label: "LinkedIn Optimization", value: clamp(resumeScore * 0.75 + secondBrainScore * 0.25) },
       { label: "Interview Readiness", value: interviewScore },
     ],
@@ -515,8 +768,11 @@ function buildGrowthEngine({
       secondBrain: notes.length,
       goals: goals.length,
       leetcode: leetcode ? leetcode.username : null,
-      codingHub: "local browser practice is tracked on the Coding Hub page; database sync is the next upgrade",
-      resumeCareer: "derived from resume, ATS, LinkedIn, interview, project tasks/goals/notes",
+      codingHub: `${practiceProgress.length} database-tracked practice completion${practiceProgress.length === 1 ? "" : "s"} plus ${codingPassedEvents.length} coding event${codingPassedEvents.length === 1 ? "" : "s"}`,
+      resumeCareer: "derived from Career Hub resume analysis, interview sessions, project tasks/goals/notes",
+      progressEvents: recentEvents.length,
+      learningSteps: learningStepEvents.length,
+      interviews: completedInterviewSessions.length,
     },
   };
 }
@@ -529,12 +785,28 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  const [tasks, notes, studyTopics, goals, settings] = await Promise.all([
+  const [tasks, notes, studyTopics, goals, settings, careerProfile, practiceProgress, events, interviewSessions] = await Promise.all([
     prisma.task.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
     prisma.note.findMany({ where: { userId }, orderBy: { updatedAt: "desc" } }),
     prisma.studyTopic.findMany({ where: { userId } }),
     prisma.goal.findMany({ where: { userId } }),
     prisma.userSettings.findUnique({ where: { userId } }),
+    dashboardDb.careerProfile.findUnique({ where: { userId } }),
+    dashboardDb.studyPracticeProgress.findMany({
+      where: { userId },
+      orderBy: { completedAt: "desc" },
+      take: 200,
+    }),
+    dashboardDb.coachEvent.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 250,
+    }),
+    dashboardDb.interviewSession.findMany({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    }),
   ]);
 
   const leetcode = await fetchLeetCodeStats(settings?.leetcodeUsername);
@@ -575,6 +847,16 @@ export async function GET() {
     upcomingDeadlines,
     recentNotes: notes.slice(0, 3),
     goals: goals.slice(0, 3),
-    growth: buildGrowthEngine({ tasks, notes, studyTopics, goals, leetcode }),
+    growth: buildGrowthEngine({
+      tasks,
+      notes,
+      studyTopics,
+      goals,
+      leetcode,
+      careerProfile,
+      practiceProgress,
+      events,
+      interviewSessions,
+    }),
   });
 }

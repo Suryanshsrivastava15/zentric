@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordCoachEvent } from "@/lib/ai-coach";
 
 const noteCategories = new Set([
   "second_brain",
@@ -41,6 +42,15 @@ export async function PATCH(
           ? body.category
           : note.category,
     },
+  });
+
+  await recordCoachEvent(session.user.id, {
+    type: "note_updated",
+    module: "Second Brain",
+    title: `Updated note: ${updated.title}`,
+    detail: `${updated.category.replace("_", " ")} note refreshed for coach memory.`,
+    impact: 1,
+    metadata: { noteId: updated.id, category: updated.category },
   });
 
   return NextResponse.json(updated);

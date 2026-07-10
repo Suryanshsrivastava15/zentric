@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   AlertCircle,
@@ -8,17 +8,12 @@ import {
   BriefcaseBusiness,
   Building2,
   CheckCircle2,
-  ClipboardList,
   FileText,
   FileUp,
   Loader2,
   Mic,
-  PlayCircle,
-  Plus,
-  Save,
   SearchCheck,
   Target,
-  Trash2,
   WandSparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +43,7 @@ type Analysis = {
   resumeScore: number | null;
   atsScore: number | null;
   resumeMatch: number | null;
+  careerReadinessScore: number | null;
   jobDescriptionMatch: number | null;
   strongSections: string[];
   needsImprovement: string[];
@@ -56,6 +52,7 @@ type Analysis = {
   missingFromJobDescription: string[];
   suggestions: string[];
   suggestedBullet: string;
+  scoreBreakdown: Array<{ label: string; value: number; detail: string }>;
   recommendedLearningPath: Array<{ topic: string; action: string }>;
   interviewPrep: string[];
   generatedInterviewQuestions: string[];
@@ -66,17 +63,6 @@ type Analysis = {
     estimatedPrepTime: string;
     missingTopics: string[];
   }>;
-};
-
-type JobApplication = {
-  id: string;
-  company: string;
-  role: string;
-  status: string;
-  location?: string | null;
-  url?: string | null;
-  notes?: string | null;
-  appliedAt?: string | null;
 };
 
 const emptyProfile: CareerProfile = {
@@ -93,217 +79,324 @@ const emptyProfile: CareerProfile = {
 
 const tabs = [
   { id: "resume", label: "Resume", icon: FileText },
-  { id: "ats", label: "ATS Analysis", icon: SearchCheck },
   { id: "interview", label: "Interview Prep", icon: Mic },
-  { id: "jobs", label: "Job Tracker", icon: ClipboardList },
   { id: "companies", label: "Company Readiness", icon: Building2 },
 ] as const;
 
-const statusOptions = ["wishlist", "applied", "interview", "offer", "rejected"];
 const companyOptions = ["Google", "Amazon", "Microsoft", "Atlassian", "Adobe", "Uber"];
 
-const interviewTracks = [
+const interviewModes = [
   {
-    id: "google-sde",
-    label: "Google SDE Interview",
-    focus: "DSA, problem solving, system design basics, and behavioral depth",
-    questions: [
-      "Explain your strongest project architecture and the tradeoffs you made.",
-      "Solve a medium graph problem and explain the time and space complexity.",
-      "How would you design a URL shortener or rate limiter at a high level?",
-      "Tell me about a time you handled failure or conflict.",
-      "What is one missing skill in your resume for Google and how are you improving it?",
-    ],
-    videos: [
-      { title: "Google software engineer mock interview", url: "https://www.youtube.com/results?search_query=google+software+engineer+mock+interview" },
-      { title: "Google coding interview graph problems", url: "https://www.youtube.com/results?search_query=google+coding+interview+graph+problems" },
-    ],
+    id: "dsa",
+    label: "DSA",
+    description: "Algorithms, data structures, complexity, and problem-solving narration.",
   },
   {
-    id: "amazon-sde",
-    label: "Amazon SDE Interview",
-    focus: "DSA, scalable design, ownership, and leadership principles",
-    questions: [
-      "Tell me about a time you took ownership of a difficult problem.",
-      "Design a notification system for millions of users.",
-      "Solve a dynamic programming question and explain your recurrence.",
-      "Which project proves you can build reliable backend systems?",
-      "How would you improve your resume for Amazon leadership principles?",
-    ],
-    videos: [
-      { title: "Amazon SDE mock interview", url: "https://www.youtube.com/results?search_query=amazon+sde+mock+interview" },
-      { title: "Amazon leadership principles interview examples", url: "https://www.youtube.com/results?search_query=amazon+leadership+principles+mock+interview" },
-    ],
+    id: "hr",
+    label: "HR",
+    description: "Behavioral signals, motivation, ownership, teamwork, and clarity.",
+  },
+  {
+    id: "resume",
+    label: "Resume-based",
+    description: "Questions grounded in projects, internships, skills, and career story.",
+  },
+  {
+    id: "mixed",
+    label: "Mixed",
+    description: "A realistic blend of technical, resume, and behavioral questions.",
+  },
+  {
+    id: "system-design",
+    label: "System Design",
+    description: "APIs, databases, scaling, tradeoffs, caching, and reliability.",
   },
   {
     id: "frontend",
-    label: "Frontend / React Interview",
-    focus: "React, TypeScript, UI architecture, performance, and product thinking",
-    questions: [
-      "Explain React rendering and how you would optimize a slow dashboard.",
-      "How would you structure reusable components in Zentric?",
-      "What accessibility improvements would you add to a login page?",
-      "Explain state management choices for a large SaaS app.",
-      "Walk me through a frontend bug you debugged deeply.",
-    ],
-    videos: [
-      { title: "React frontend mock interview", url: "https://www.youtube.com/results?search_query=react+frontend+mock+interview" },
-      { title: "TypeScript frontend interview questions", url: "https://www.youtube.com/results?search_query=typescript+frontend+interview+questions" },
-    ],
+    label: "Frontend",
+    description: "React, TypeScript, UI architecture, accessibility, and performance.",
   },
   {
     id: "backend",
-    label: "Backend / System Design Interview",
-    focus: "APIs, databases, scalability, caching, queues, and system design",
-    questions: [
-      "Design an ATS resume analysis service for thousands of users.",
-      "How would you model users, resumes, jobs, and company readiness in a database?",
-      "Explain REST API design and error handling for uploads.",
-      "Where would you use caching in Zentric?",
-      "How would you secure user resume data?",
-    ],
-    videos: [
-      { title: "Backend system design mock interview", url: "https://www.youtube.com/results?search_query=backend+system+design+mock+interview" },
-      { title: "System design interview beginner mock", url: "https://www.youtube.com/results?search_query=system+design+mock+interview+beginner" },
-    ],
+    label: "Backend",
+    description: "APIs, databases, auth, queues, security, and backend reliability.",
   },
   {
-    id: "behavioral",
-    label: "Behavioral / HR Interview",
-    focus: "Communication, STAR stories, project ownership, conflict, and growth mindset",
-    questions: [
-      "Tell me about yourself in 90 seconds.",
-      "Describe a time you failed and what changed after that.",
-      "Tell me about a project you are proud of and why.",
-      "How do you handle pressure before deadlines?",
-      "Why this company and why this role?",
-    ],
-    videos: [
-      { title: "Behavioral mock interview software engineer", url: "https://www.youtube.com/results?search_query=behavioral+mock+interview+software+engineer" },
-      { title: "STAR method interview examples", url: "https://www.youtube.com/results?search_query=STAR+method+mock+interview+examples" },
-    ],
+    id: "fullstack",
+    label: "Full Stack",
+    description: "End-to-end product features from UI to database and deployment.",
+  },
+  {
+    id: "ai-ml",
+    label: "AI/ML",
+    description: "Model evaluation, AI systems, personalization, and data pipelines.",
+  },
+  {
+    id: "data",
+    label: "Data",
+    description: "SQL, analytics, metrics, dashboards, data cleaning, and insights.",
+  },
+  {
+    id: "devops",
+    label: "DevOps",
+    description: "CI/CD, cloud, monitoring, reliability, secrets, and deployments.",
+  },
+  {
+    id: "product",
+    label: "Product",
+    description: "Product sense, prioritization, metrics, research, and UX clarity.",
+  },
+  {
+    id: "security",
+    label: "Cybersecurity",
+    description: "Threat modeling, privacy, access control, incidents, and secure design.",
   },
 ] as const;
 
-function buildCustomInterviewTrack(company: string, role: string) {
-  const safeCompany = company.trim() || "Your target company";
-  const safeRole = role.trim() || "Software Engineer";
+const targetRoles = [
+  "Software Engineer",
+  "SDE Intern",
+  "Frontend Engineer",
+  "Backend Engineer",
+  "Full Stack Developer",
+  "Mobile App Developer",
+  "DevOps Engineer",
+  "Cloud Engineer",
+  "Cybersecurity Analyst",
+  "Data Analyst",
+  "Data Scientist",
+  "AI/ML Engineer",
+  "Machine Learning Intern",
+  "Product Intern",
+  "Product Manager",
+  "UI/UX Designer",
+  "QA Engineer",
+  "Business Analyst",
+  "Custom Role",
+];
+
+const interviewDifficulties = ["Beginner", "Intermediate", "Advanced", "Real Interview"] as const;
+
+type InterviewQuestion = {
+  id?: string;
+  mode: string;
+  question: string;
+  idealPoints: string[];
+  skillArea?: string;
+};
+
+type InterviewHistoryItem = {
+  questionIndex?: number;
+  mode: string;
+  question: string;
+  answer: string;
+  score: number;
+  technicalDepth?: number;
+  clarity?: number;
+  structure?: number;
+  roleFit?: number;
+  confidence?: number;
+  resumeProof?: number;
+  feedback: string;
+  idealAnswer?: string;
+  improvedAnswer?: string;
+  followUpQuestion?: string;
+  idealPoints: string[];
+  skillArea?: string;
+  createdAt?: string;
+};
+
+type SavedInterviewSession = {
+  id: string;
+  role: string;
+  company: string;
+  mode: string;
+  difficulty: string;
+  status: string;
+  questions: InterviewQuestion[];
+  answers: InterviewHistoryItem[];
+  report: ReturnType<typeof buildInterviewReport> | null;
+  averageScore: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function getTomorrowDateISO() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().slice(0, 10);
+}
+
+function getDateOffsetISO(daysFromToday: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildInterviewReport(history: InterviewHistoryItem[], resumeUploaded: boolean) {
+  const average = history.length
+    ? Math.round(history.reduce((sum, item) => sum + item.score, 0) / history.length)
+    : 0;
+  const averageBy = (
+    items: InterviewHistoryItem[],
+    key: "technicalDepth" | "clarity" | "structure" | "roleFit" | "confidence" | "resumeProof",
+  ) => items.length ? Math.round(items.reduce((sum, item) => sum + (item[key] ?? item.score), 0) / items.length) : 0;
+  const technicalAnswers = history.filter((item) =>
+    [
+      "DSA",
+      "System Design",
+      "Frontend",
+      "Backend",
+      "Full Stack",
+      "AI/ML",
+      "Data",
+      "DevOps",
+      "Cybersecurity",
+      "Custom Interview",
+    ].includes(item.mode),
+  );
+  const resumeAnswers = history.filter((item) => item.mode === "Resume-based");
+  const weakAnswers = history.filter((item) => item.score < 70);
+  const strongAnswers = history.filter((item) => item.score >= 80);
+  const missingSignals = Array.from(new Set(weakAnswers.flatMap((item) => item.idealPoints))).slice(0, 6);
 
   return {
-    id: "custom",
-    label: `${safeCompany} ${safeRole} Interview`,
-    focus: `Custom preparation for ${safeRole} at ${safeCompany}: technical depth, resume fit, projects, and behavioral readiness.`,
-    questions: [
-      `Why do you want to join ${safeCompany} for a ${safeRole} role?`,
-      `Which project from your resume best proves you are ready for ${safeCompany}?`,
-      "Tell me about a difficult technical decision you made and the tradeoff behind it.",
-      "Explain one weak skill from your resume and your plan to improve it.",
-      "Walk me through your resume in a way that matches this company and role.",
-    ],
-    videos: [
-      {
-        title: `${safeCompany} ${safeRole} mock interview`,
-        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${safeCompany} ${safeRole} mock interview`)}`,
-      },
-      {
-        title: `${safeCompany} coding interview questions`,
-        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${safeCompany} coding interview questions`)}`,
-      },
-    ],
+    overall: average,
+    technical: technicalAnswers.length
+      ? averageBy(technicalAnswers, "technicalDepth")
+      : averageBy(history, "technicalDepth"),
+    communication: Math.round((averageBy(history, "clarity") + averageBy(history, "structure") + averageBy(history, "confidence")) / 3),
+    resumeAlignment: resumeUploaded
+      ? resumeAnswers.length
+        ? averageBy(resumeAnswers, "resumeProof")
+        : averageBy(history, "resumeProof")
+      : 35,
+    structure: averageBy(history, "structure"),
+    confidence: averageBy(history, "confidence"),
+    strongAnswers,
+    weakAnswers,
+    missingSignals,
+    plannerTopics: missingSignals.length ? missingSignals : ["Practice structured interview answers", "Add examples and measurable impact"],
   };
 }
 
-function getTechnicalQuestions(interviewId: string, company: string, role: string) {
-  if (interviewId === "frontend") {
-    return [
-      "Build a reusable autocomplete component. How would you handle debouncing, keyboard navigation, and loading states?",
-      "Explain React reconciliation, memoization, and when useMemo/useCallback are actually useful.",
-      "How would you debug a page that is slow only on low-end mobile devices?",
-      "Design the frontend architecture for a dashboard with filters, charts, and real-time updates.",
-      "Explain TypeScript generics using a reusable API response type.",
-    ];
-  }
-
-  if (interviewId === "backend") {
-    return [
-      "Design a rate limiter for a public API. Compare token bucket and sliding window.",
-      "How would you design authentication, sessions, and permissions for a SaaS app?",
-      "Explain database indexing and how you would optimize a slow query.",
-      "Design a queue-based resume analysis pipeline for large file uploads.",
-      "What happens when a user sends a request from browser to database? Explain the full path.",
-    ];
-  }
-
-  if (interviewId === "behavioral") {
-    return [
-      "Explain one technical project to a non-technical interviewer in under two minutes.",
-      "Describe a time you disagreed on a technical decision and how you handled it.",
-      "Tell a STAR story about debugging a difficult production-like issue.",
-      "How do you prioritize learning when you have DSA, projects, and interviews at the same time?",
-      "What technical weakness are you actively improving right now?",
-    ];
-  }
-
-  if (interviewId === "amazon-sde") {
-    return [
-      "Solve a dynamic programming problem and explain the recurrence, base cases, and complexity.",
-      "Design a scalable order tracking or notification service.",
-      "Explain how you would handle retries, idempotency, and failure in a backend system.",
-      "Given logs from a failing service, how would you debug the root cause?",
-      "Solve a tree/graph traversal problem and explain edge cases.",
-    ];
-  }
-
-  if (interviewId === "custom") {
-    const safeCompany = company.trim() || "the target company";
-    const safeRole = role.trim() || "the target role";
-    return [
-      `What technical skills are most important for ${safeRole} at ${safeCompany}, and which ones does your resume prove?`,
-      `Design a system or feature that ${safeCompany} might build. Explain APIs, database, scaling, and tradeoffs.`,
-      "Solve one DSA medium problem related to arrays, graphs, or dynamic programming and explain complexity.",
-      "Pick one resume project and explain architecture, database design, security, and performance improvements.",
-      `Which missing skill would hurt you most for ${safeCompany}, and what is your 7-day practice plan?`,
-    ];
-  }
-
+function buildInterviewNoteContent({
+  history,
+  report,
+  role,
+  company,
+  mode,
+  difficulty,
+}: {
+  history: InterviewHistoryItem[];
+  report: ReturnType<typeof buildInterviewReport>;
+  role: string;
+  company: string;
+  mode: string;
+  difficulty: string;
+}) {
   return [
-    "Solve a medium graph problem and explain BFS vs DFS tradeoffs.",
-    "Explain dynamic programming with recurrence, memoization, tabulation, and complexity.",
-    "Design a URL shortener. Cover APIs, database schema, caching, rate limits, and scaling.",
-    "Explain hashing, collisions, and when a hashmap is not the right choice.",
-    "Pick your best project and explain architecture, bottlenecks, security, and measurable impact.",
-  ];
+    `Interview Simulation Report`,
+    ``,
+    `Role: ${role}`,
+    `Company: ${company}`,
+    `Mode: ${mode}`,
+    `Difficulty: ${difficulty}`,
+    `Overall Score: ${report.overall}/100`,
+    `Technical Score: ${report.technical}/100`,
+    `Communication Score: ${report.communication}/100`,
+    `Resume Alignment: ${report.resumeAlignment}/100`,
+    ``,
+    `Weak areas to revise:`,
+    ...report.plannerTopics.map((item) => `- ${item}`),
+    ``,
+    `Answers:`,
+    ...history.flatMap((item, index) => [
+      `${index + 1}. ${item.question}`,
+      `Score: ${item.score}/100`,
+      `Technical Depth: ${item.technicalDepth ?? item.score}/100`,
+      `Clarity: ${item.clarity ?? item.score}/100`,
+      `Structure: ${item.structure ?? item.score}/100`,
+      `Role Fit: ${item.roleFit ?? item.score}/100`,
+      `Confidence: ${item.confidence ?? item.score}/100`,
+      `Resume Proof: ${item.resumeProof ?? item.score}/100`,
+      `Feedback: ${item.feedback}`,
+      `Ideal Answer: ${item.idealAnswer ?? "Use the ideal answer signals."}`,
+      `Improved Version: ${item.improvedAnswer ?? "Rewrite with structure, proof, and impact."}`,
+      `Follow-up Question: ${item.followUpQuestion ?? "What tradeoff would you mention if pushed harder?"}`,
+      `Answer: ${item.answer}`,
+      ``,
+    ]),
+  ].join("\n");
 }
 
 export default function CareerHubPage() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>("resume");
   const [profile, setProfile] = useState<CareerProfile>(emptyProfile);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
-  const [jobSaving, setJobSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [selectedInterview, setSelectedInterview] = useState<string>("google-sde");
-  const [customInterviewCompany, setCustomInterviewCompany] = useState("");
-  const [customInterviewRole, setCustomInterviewRole] = useState("Software Engineer");
   const [customReadinessCompany, setCustomReadinessCompany] = useState("");
-  const [jobForm, setJobForm] = useState({
-    company: "",
-    role: "",
-    status: "wishlist",
-    location: "",
-    url: "",
-    notes: "",
-  });
+  const [simulationMode, setSimulationMode] = useState<(typeof interviewModes)[number]["id"]>("dsa");
+  const [simulationRole, setSimulationRole] = useState("Software Engineer");
+  const [customSimulationRole, setCustomSimulationRole] = useState("");
+  const [simulationDifficulty, setSimulationDifficulty] = useState<(typeof interviewDifficulties)[number]>("Intermediate");
+  const [simulationQuestions, setSimulationQuestions] = useState<InterviewQuestion[]>([]);
+  const [currentSimulationIndex, setCurrentSimulationIndex] = useState(0);
+  const [simulationAnswer, setSimulationAnswer] = useState("");
+  const [simulationFeedback, setSimulationFeedback] = useState("");
+  const [simulationHistory, setSimulationHistory] = useState<InterviewHistoryItem[]>([]);
+  const [simulationFinished, setSimulationFinished] = useState(false);
+  const [savingInterviewReport, setSavingInterviewReport] = useState(false);
+  const [savingCompanyReadiness, setSavingCompanyReadiness] = useState(false);
+  const [savingMissionPlan, setSavingMissionPlan] = useState(false);
+  const [interviewSessionId, setInterviewSessionId] = useState("");
+  const [interviewSessions, setInterviewSessions] = useState<SavedInterviewSession[]>([]);
+  const [interviewActionLoading, setInterviewActionLoading] = useState(false);
 
-  const fetchCareer = async () => {
+  const syncMissionToInterview = useCallback((mission: CareerProfile) => {
+    const role = mission.dreamRole.trim();
+    if (!role || role === emptyProfile.dreamRole) return;
+
+    if (targetRoles.includes(role)) {
+      setSimulationRole(role);
+      setCustomSimulationRole("");
+    } else {
+      setSimulationRole("Custom Role");
+      setCustomSimulationRole(role);
+    }
+
+    const normalizedRole = role.toLowerCase();
+    const nextMode =
+      /front|react|ui|web/.test(normalizedRole)
+        ? "frontend"
+        : /back|api|server/.test(normalizedRole)
+          ? "backend"
+          : /full.?stack/.test(normalizedRole)
+            ? "fullstack"
+            : /ai|ml|machine|data scientist/.test(normalizedRole)
+              ? "ai-ml"
+              : /data|analyst|sql/.test(normalizedRole)
+                ? "data"
+                : /devops|cloud|sre|platform/.test(normalizedRole)
+                  ? "devops"
+                  : /cyber|security/.test(normalizedRole)
+                    ? "security"
+                    : /product|pm|manager/.test(normalizedRole)
+                      ? "product"
+                      : "mixed";
+
+    setSimulationMode(nextMode as (typeof interviewModes)[number]["id"]);
+  }, []);
+
+  const fetchCareer = useCallback(async () => {
     const response = await fetch("/api/career");
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to load Career Hub.");
 
-    setProfile({
+    const nextProfile = {
       ...emptyProfile,
       ...(data.profile ?? {}),
       resumeText: data.profile?.resumeText ?? "",
@@ -313,33 +406,89 @@ export default function CareerHubPage() {
       educationText: data.profile?.educationText ?? "",
       preferredKeywords: data.profile?.preferredKeywords ?? emptyProfile.preferredKeywords,
       jobDescriptionText: data.profile?.jobDescriptionText ?? "",
-    });
+    };
+    setProfile(nextProfile);
     setAnalysis(data.analysis);
-    setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+    syncMissionToInterview(nextProfile);
     setLoading(false);
-  };
+  }, [syncMissionToInterview]);
+
+  const fetchInterviewSessions = useCallback(async () => {
+    const response = await fetch("/api/career/interviews");
+    if (!response.ok) return;
+    const data = await response.json();
+    setInterviewSessions(data);
+  }, []);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       fetchCareer().catch(() => setLoading(false));
+      fetchInterviewSessions().catch(() => undefined);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [fetchCareer, fetchInterviewSessions]);
 
-  const jobStats = useMemo(() => {
-    return statusOptions.map((status) => ({
-      status,
-      count: jobs.filter((job) => job.status === status).length,
-    }));
-  }, [jobs]);
   const isAnalyzed = Boolean(analysis?.isAnalyzed);
-  const interviewTrack =
-    selectedInterview === "custom"
-      ? buildCustomInterviewTrack(customInterviewCompany, customInterviewRole)
-      : interviewTracks.find((track) => track.id === selectedInterview) ?? interviewTracks[0];
-  const technicalQuestions = getTechnicalQuestions(selectedInterview, customInterviewCompany || profile.targetCompany, customInterviewRole);
   const selectedCompany =
     analysis?.companies.find((company) => company.company === profile.targetCompany) ?? analysis?.companies[0] ?? null;
+  const companyReadinessTopics = selectedCompany
+    ? Array.from(
+        new Set([
+          ...selectedCompany.missingTopics,
+          ...selectedCompany.weakestSkills,
+          ...(analysis?.missingKeywords.slice(0, 4) ?? []),
+        ]),
+      ).slice(0, 6)
+    : [];
+  const resumeWordCount = profile.resumeText.trim().split(/\s+/).filter(Boolean).length;
+  const hasResumeUpload = resumeWordCount > 0;
+  const matchedKeywordCount = analysis?.matchedKeywords.length ?? 0;
+  const missingKeywordCount = analysis?.missingKeywords.length ?? 0;
+  const missionPlanTopics = Array.from(
+    new Set([
+      ...companyReadinessTopics,
+      ...(analysis?.missingKeywords.slice(0, 5) ?? []),
+      ...(analysis?.needsImprovement.slice(0, 3) ?? []),
+      ...(analysis?.recommendedLearningPath.map((item) => item.topic).slice(0, 4) ?? []),
+    ]),
+  ).filter(Boolean).slice(0, 6);
+  const activeSimulationQuestion = simulationQuestions[currentSimulationIndex] ?? null;
+  const activeScoredAnswer = simulationHistory.find((item) => item.questionIndex === currentSimulationIndex) ?? null;
+  const simulationAverage = simulationHistory.length
+    ? Math.round(simulationHistory.reduce((sum, item) => sum + item.score, 0) / simulationHistory.length)
+    : 0;
+  const resolvedSimulationRole = simulationRole === "Custom Role" ? customSimulationRole || "your target role" : simulationRole;
+  const isCustomSimulationRole = simulationRole === "Custom Role";
+  const effectiveSimulationMode = isCustomSimulationRole ? "custom" : simulationMode;
+  const effectiveSimulationModeLabel = isCustomSimulationRole
+    ? "Custom Interview"
+    : interviewModes.find((mode) => mode.id === simulationMode)?.label ?? "Interview";
+  const interviewReport = simulationHistory.length ? buildInterviewReport(simulationHistory, hasResumeUpload) : null;
+
+  const rememberInterviewSession = (session: SavedInterviewSession) => {
+    setInterviewSessions((current) => [session, ...current.filter((item) => item.id !== session.id)].slice(0, 12));
+  };
+
+  const openSavedInterviewSession = (session: SavedInterviewSession) => {
+    setInterviewSessionId(session.id);
+    setSimulationRole(targetRoles.includes(session.role) ? session.role : "Custom Role");
+    setCustomSimulationRole(targetRoles.includes(session.role) ? customSimulationRole : session.role);
+    if (interviewModes.some((mode) => mode.id === session.mode)) {
+      setSimulationMode(session.mode as (typeof interviewModes)[number]["id"]);
+    }
+    setSimulationDifficulty(
+      interviewDifficulties.includes(session.difficulty as (typeof interviewDifficulties)[number])
+        ? (session.difficulty as (typeof interviewDifficulties)[number])
+        : "Intermediate",
+    );
+    setSimulationQuestions(session.questions ?? []);
+    setSimulationHistory(session.answers ?? []);
+    setCurrentSimulationIndex(Math.min(session.answers?.length ?? 0, Math.max(0, (session.questions?.length ?? 1) - 1)));
+    setSimulationAnswer("");
+    setSimulationFeedback("");
+    setSimulationFinished(session.status === "completed");
+    setMessage(`Loaded saved interview for ${session.role}.`);
+  };
 
   const saveCareerProfile = async (nextProfile: CareerProfile) => {
     const response = await fetch("/api/career", {
@@ -349,7 +498,7 @@ export default function CareerHubPage() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to save profile.");
-    setProfile({
+    const savedProfile = {
       ...emptyProfile,
       ...(data.profile ?? nextProfile),
       resumeText: data.profile?.resumeText ?? nextProfile.resumeText,
@@ -359,8 +508,10 @@ export default function CareerHubPage() {
       educationText: data.profile?.educationText ?? nextProfile.educationText,
       preferredKeywords: data.profile?.preferredKeywords ?? nextProfile.preferredKeywords,
       jobDescriptionText: data.profile?.jobDescriptionText ?? nextProfile.jobDescriptionText,
-    });
+    };
+    setProfile(savedProfile);
     setAnalysis(data.analysis);
+    syncMissionToInterview(savedProfile);
     return data;
   };
 
@@ -371,8 +522,8 @@ export default function CareerHubPage() {
       const data = await saveCareerProfile(nextProfile);
       setMessage(
         data.analysis?.isAnalyzed
-          ? "Career Hub updated. Resume, ATS, and readiness scores recalculated."
-          : "Career Hub saved. Add resume/profile details to generate scores."
+          ? "Career mission saved. Resume scoring, Interview Prep, Company Readiness, and AI Coach are now using this target."
+          : "Career mission saved. Interview Prep and AI Coach are synced; upload your resume to generate scores."
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save profile.");
@@ -400,7 +551,7 @@ export default function CareerHubPage() {
         resumeText: data.text,
       };
       await saveCareerProfile(nextProfile);
-      setMessage(`Resume uploaded from ${data.fileName}. ATS analysis has been recalculated.`);
+      setMessage(`Resume uploaded from ${data.fileName}. Resume analysis has been recalculated.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to upload resume.");
     } finally {
@@ -408,39 +559,294 @@ export default function CareerHubPage() {
     }
   };
 
-  const addJob = async () => {
-    if (!jobForm.company.trim() || !jobForm.role.trim()) return;
-    setJobSaving(true);
+  const launchInterviewSimulation = async () => {
+    if (isCustomSimulationRole && !customSimulationRole.trim()) {
+      setMessage("Enter your custom target role first, then launch the interview.");
+      return;
+    }
+
+    setInterviewActionLoading(true);
+    setMessage("");
     try {
-      const response = await fetch("/api/career/jobs", {
+      const response = await fetch("/api/career/interviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(jobForm),
+        body: JSON.stringify({
+          mode: effectiveSimulationMode,
+          role: resolvedSimulationRole,
+          difficulty: simulationDifficulty,
+          company: profile.targetCompany,
+        }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to add job.");
-      setJobs((current) => [data, ...current]);
-      setJobForm({ company: "", role: "", status: "wishlist", location: "", url: "", notes: "" });
+      const session = await response.json();
+      if (!response.ok) throw new Error(session.error || "Unable to launch interview.");
+
+      setInterviewSessionId(session.id);
+      setSimulationQuestions(session.questions);
+      setCurrentSimulationIndex(0);
+      setSimulationAnswer("");
+      setSimulationFeedback("");
+      setSimulationHistory(session.answers ?? []);
+      setSimulationFinished(false);
+      rememberInterviewSession(session);
+      setMessage("Interview room launched and saved. Answer the first question like a real interview.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to launch interview.");
     } finally {
-      setJobSaving(false);
+      setInterviewActionLoading(false);
     }
   };
 
-  const updateJobStatus = async (id: string, status: string) => {
-    const response = await fetch(`/api/career/jobs/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    const updated = await response.json();
-    if (response.ok) {
-      setJobs((current) => current.map((job) => (job.id === id ? updated : job)));
+  const submitSimulationAnswer = async () => {
+    if (!activeSimulationQuestion || !interviewSessionId) {
+      setSimulationFeedback("Launch an interview room first.");
+      return;
+    }
+
+    if (simulationAnswer.trim().length < 8) {
+      setSimulationFeedback("Write an answer first. Even weak answers can be scored, but blank answers cannot.");
+      return;
+    }
+
+    setInterviewActionLoading(true);
+    try {
+      const response = await fetch(`/api/career/interviews/${interviewSessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "answer",
+          questionIndex: currentSimulationIndex,
+          answer: simulationAnswer,
+        }),
+      });
+      const session = await response.json();
+      if (!response.ok) throw new Error(session.error || "Unable to score answer.");
+
+      const scoredAnswer = session.answers?.find((item: InterviewHistoryItem) => item.questionIndex === currentSimulationIndex);
+      setSimulationHistory(session.answers ?? []);
+      setSimulationFeedback(scoredAnswer?.feedback ?? "Answer scored.");
+      rememberInterviewSession(session);
+    } catch (error) {
+      setSimulationFeedback(error instanceof Error ? error.message : "Unable to score answer.");
+    } finally {
+      setInterviewActionLoading(false);
     }
   };
 
-  const deleteJob = async (id: string) => {
-    const response = await fetch(`/api/career/jobs/${id}`, { method: "DELETE" });
-    if (response.ok) setJobs((current) => current.filter((job) => job.id !== id));
+  const nextSimulationQuestion = async () => {
+    if (currentSimulationIndex < simulationQuestions.length - 1) {
+      setCurrentSimulationIndex((index) => index + 1);
+      setSimulationAnswer("");
+      setSimulationFeedback("");
+      return;
+    }
+
+    if (!interviewSessionId) {
+      setSimulationFinished(true);
+      setMessage(`Interview simulation complete. Review your report below.`);
+      return;
+    }
+
+    setInterviewActionLoading(true);
+    try {
+      const response = await fetch(`/api/career/interviews/${interviewSessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "finish" }),
+      });
+      const session = await response.json();
+      if (!response.ok) throw new Error(session.error || "Unable to finish interview.");
+
+      setSimulationHistory(session.answers ?? simulationHistory);
+      setSimulationFinished(true);
+      rememberInterviewSession(session);
+      setMessage(`Interview simulation complete and saved. Review your report below.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to finish interview.");
+    } finally {
+      setInterviewActionLoading(false);
+    }
+  };
+
+  const addInterviewWeakAreasToPlanner = async () => {
+    if (!interviewReport) return;
+    setSavingInterviewReport(true);
+    setMessage("");
+    try {
+      const deadline = getTomorrowDateISO();
+      await Promise.all(
+        interviewReport.plannerTopics.slice(0, 4).map((topic) =>
+          fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: `Interview revision: ${topic}`,
+              description: `From ${simulationDifficulty} ${effectiveSimulationModeLabel} simulation for ${resolvedSimulationRole}. Practice this weak signal before the next mock interview.`,
+                priority: "high",
+                deadline,
+              }),
+          }),
+        ),
+      );
+      setMessage("Weak interview areas added to Planner.");
+    } catch {
+      setMessage("Unable to add interview weak areas to Planner.");
+    } finally {
+      setSavingInterviewReport(false);
+    }
+  };
+
+  const addCareerMissionToPlanner = async () => {
+    if (!profile.dreamRole.trim() || !profile.targetCompany.trim()) {
+      setMessage("Add your dream role and target company first.");
+      return;
+    }
+
+    setSavingMissionPlan(true);
+    setMessage("");
+    try {
+      const topics = missionPlanTopics.length
+        ? missionPlanTopics
+        : ["Resume proof", "Role-specific interview practice", "Project improvement", "Company readiness"];
+      const tasks = [
+        {
+          title: `Mission: improve ${profile.targetCompany} ${profile.dreamRole} readiness`,
+          description: `Review your resume score, missing skills, interview gaps, and company readiness for ${profile.dreamRole} at ${profile.targetCompany}.`,
+          priority: "high",
+          deadline: getDateOffsetISO(1),
+        },
+        ...topics.slice(0, 4).map((topic, index) => ({
+          title: `${profile.dreamRole} roadmap: ${topic}`,
+          description: `Master ${topic} because it is connected to your dream target: ${profile.dreamRole} at ${profile.targetCompany}.`,
+          priority: index < 2 ? "high" : "medium",
+          deadline: getDateOffsetISO(index + 2),
+        })),
+        {
+          title: `Mock interview for ${profile.dreamRole}`,
+          description: `Open Career Hub → Interview Prep and launch a ${effectiveSimulationModeLabel} room for ${profile.dreamRole} at ${profile.targetCompany}.`,
+          priority: "high",
+          deadline: getDateOffsetISO(3),
+        },
+      ];
+
+      await Promise.all(
+        tasks.map((task) =>
+          fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(task),
+          }),
+        ),
+      );
+
+      setMessage(`Career mission plan added to Planner for ${profile.dreamRole} at ${profile.targetCompany}.`);
+    } catch {
+      setMessage("Unable to add career mission plan to Planner.");
+    } finally {
+      setSavingMissionPlan(false);
+    }
+  };
+
+  const saveInterviewReportToSecondBrain = async () => {
+    if (!interviewReport) return;
+    setSavingInterviewReport(true);
+    setMessage("");
+    try {
+      const content = buildInterviewNoteContent({
+        history: simulationHistory,
+        report: interviewReport,
+        role: resolvedSimulationRole,
+        company: profile.targetCompany,
+        mode: effectiveSimulationModeLabel,
+        difficulty: simulationDifficulty,
+      });
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Interview Report: ${resolvedSimulationRole}`,
+          content,
+          category: "interview",
+          tags: `interview,${effectiveSimulationMode},${resolvedSimulationRole}`,
+        }),
+      });
+      if (!response.ok) throw new Error("Unable to save note.");
+      setMessage("Interview report saved to Second Brain.");
+    } catch {
+      setMessage("Unable to save interview report to Second Brain.");
+    } finally {
+      setSavingInterviewReport(false);
+    }
+  };
+
+  const addCompanyRoadmapToPlanner = async () => {
+    if (!selectedCompany || companyReadinessTopics.length === 0) return;
+    setSavingCompanyReadiness(true);
+    setMessage("");
+    try {
+      const deadline = getTomorrowDateISO();
+      await Promise.all(
+        companyReadinessTopics.slice(0, 5).map((topic, index) =>
+          fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: `${selectedCompany.company} readiness: ${topic}`,
+              description: `Master ${topic} for ${profile.dreamRole} at ${selectedCompany.company}. This came from Company Readiness in Career Hub.`,
+              priority: index < 2 ? "high" : "medium",
+              deadline,
+            }),
+          }),
+        ),
+      );
+      setMessage(`${selectedCompany.company} readiness roadmap added to Planner.`);
+    } catch {
+      setMessage("Unable to add company roadmap to Planner.");
+    } finally {
+      setSavingCompanyReadiness(false);
+    }
+  };
+
+  const saveCompanyReadinessToSecondBrain = async () => {
+    if (!selectedCompany) return;
+    setSavingCompanyReadiness(true);
+    setMessage("");
+    try {
+      const content = [
+        `Company Readiness Report`,
+        ``,
+        `Company: ${selectedCompany.company}`,
+        `Target Role: ${profile.dreamRole}`,
+        `Readiness: ${selectedCompany.readiness ?? 0}/100`,
+        `Estimated Preparation: ${selectedCompany.estimatedPrepTime}`,
+        ``,
+        `Missing Skills:`,
+        ...selectedCompany.weakestSkills.map((item) => `- ${item}`),
+        ``,
+        `Areas To Master:`,
+        ...selectedCompany.missingTopics.map((item) => `- ${item}`),
+        ``,
+        `Roadmap:`,
+        ...companyReadinessTopics.map((item, index) => `${index + 1}. ${item}`),
+      ].join("\n");
+
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${selectedCompany.company} Readiness Report`,
+          content,
+          category: "interview",
+          tags: `career,company-readiness,${selectedCompany.company},${profile.dreamRole}`,
+        }),
+      });
+      if (!response.ok) throw new Error("Unable to save note.");
+      setMessage(`${selectedCompany.company} readiness report saved to Second Brain.`);
+    } catch {
+      setMessage("Unable to save company readiness report.");
+    } finally {
+      setSavingCompanyReadiness(false);
+    }
   };
 
   return (
@@ -454,13 +860,12 @@ export default function CareerHubPage() {
             </Badge>
             <h1 className="text-3xl font-bold text-white">Career Hub</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
-              Resume, ATS analysis, interview prep, job tracking, and company readiness tied back to your Zentric growth mission.
+              Resume upload, interview prep, and company readiness tied back to your Zentric growth mission.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:min-w-[420px]">
+          <div className="grid grid-cols-2 gap-3 sm:min-w-[320px]">
             <ScoreTile label="Resume" value={analysis?.resumeScore} />
-            <ScoreTile label="ATS" value={analysis?.atsScore} />
-            <ScoreTile label="Dream Match" value={analysis?.resumeMatch} />
+            <ScoreTile label="Career Readiness" value={analysis?.careerReadinessScore} />
           </div>
         </div>
       </header>
@@ -494,8 +899,7 @@ export default function CareerHubPage() {
 
       {!loading && !isAnalyzed && (
         <div className="mb-5 rounded-2xl border border-yellow-400/20 bg-yellow-400/10 px-4 py-3 text-sm leading-6 text-yellow-100">
-          Resume and ATS scores are not analyzed yet because no resume/profile data has been added. Paste your resume or fill Skills,
-          Projects, and Experience, then click Save and Recalculate.
+          Resume scores are not analyzed yet because no resume has been uploaded. Upload your resume to generate analysis.
         </div>
       )}
 
@@ -506,44 +910,151 @@ export default function CareerHubPage() {
       ) : (
         <>
           {activeTab === "resume" && (
-            <div className="grid gap-5 xl:grid-cols-[1fr_0.85fr]">
-              <Card>
+            <div className="space-y-5">
+              <Card className="overflow-hidden border-purple-400/20 bg-gradient-to-br from-purple-500/[0.12] via-blue-500/[0.06] to-white/[0.02]">
                 <CardHeader>
-                  <CardTitle>Resume Profile</CardTitle>
+                  <Badge className="w-fit border-purple-400/30 bg-purple-400/10 text-purple-100">
+                    Career Mission Setup
+                  </Badge>
+                  <CardTitle className="text-2xl">Dream Career Target</CardTitle>
+                  <p className="max-w-3xl text-sm leading-6 text-gray-400">
+                    Set this once and Zentric uses it across Resume, Interview Prep, Company Readiness,
+                    Planner, Second Brain, and AI Coach.
+                  </p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-3 md:grid-cols-2">
+                <CardContent className="space-y-5">
+                  <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
                     <Field label="Dream Role">
-                      <Input value={profile.dreamRole} onChange={(event) => setProfile({ ...profile, dreamRole: event.target.value })} />
+                      <Input
+                        value={profile.dreamRole}
+                        onChange={(event) => setProfile({ ...profile, dreamRole: event.target.value })}
+                        placeholder="e.g. Software Engineer Intern"
+                      />
                     </Field>
                     <Field label="Target Company">
-                      <Select value={profile.targetCompany} onValueChange={(value) => setProfile({ ...profile, targetCompany: value })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {!companyOptions.includes(profile.targetCompany) && profile.targetCompany && (
-                            <SelectItem value={profile.targetCompany}>{profile.targetCompany}</SelectItem>
-                          )}
-                          {companyOptions.map((company) => (
-                            <SelectItem key={company} value={company}>{company}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        value={profile.targetCompany}
+                        onChange={(event) => setProfile({ ...profile, targetCompany: event.target.value })}
+                        placeholder="e.g. Google, Amazon, Microsoft"
+                      />
                     </Field>
+                    <Button
+                      onClick={() => saveProfile()}
+                      disabled={saving || !profile.dreamRole.trim() || !profile.targetCompany.trim()}
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                    >
+                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
+                      Save Mission
+                    </Button>
                   </div>
-                  <div className="rounded-2xl border border-blue-400/20 bg-blue-500/[0.06] p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="flex items-center gap-2 text-sm font-semibold text-blue-100">
-                          <FileUp className="h-4 w-4" />
-                          Upload Resume
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-gray-400">
-                          Upload PDF, DOCX, DOC, TXT, MD, CSV, JSON, or paste text below. Zentric extracts resume text and recalculates ATS.
-                        </p>
+
+                  <div className="grid gap-3 md:grid-cols-4">
+                    <MissionSignal
+                      label="Resume Scan"
+                      value={isAnalyzed ? `${analysis?.resumeScore ?? 0}%` : "Needs resume"}
+                      description="Role/company ATS-style scoring"
+                    />
+                    <MissionSignal
+                      label="Company Readiness"
+                      value={selectedCompany?.readiness === null || selectedCompany?.readiness === undefined ? "Waiting" : `${selectedCompany.readiness}%`}
+                      description={selectedCompany ? `${selectedCompany.company} target` : "Target company match"}
+                    />
+                    <MissionSignal
+                      label="Interview Prep"
+                      value={effectiveSimulationModeLabel}
+                      description={resolvedSimulationRole}
+                    />
+                    <MissionSignal
+                      label="Planner Actions"
+                      value={`${missionPlanTopics.length || 4} focus areas`}
+                      description="Roadmap tasks generated"
+                    />
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-sm leading-6 text-gray-300">
+                      <span className="font-medium text-white">Active mission:</span>{" "}
+                      {profile.dreamRole || "Dream Role"} at {profile.targetCompany || "Target Company"}.
+                      Zentric uses this target to calculate role match, company readiness, interview mode,
+                      missing skills, and planner actions without requiring a job description.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button
+                        onClick={addCareerMissionToPlanner}
+                        disabled={savingMissionPlan || !profile.dreamRole.trim() || !profile.targetCompany.trim()}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white"
+                      >
+                        {savingMissionPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
+                        Add Mission Plan to Planner
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          syncMissionToInterview(profile);
+                          setActiveTab("interview");
+                          setMessage(`Interview Prep synced to ${profile.dreamRole} at ${profile.targetCompany}.`);
+                        }}
+                        variant="outline"
+                        className="border-purple-400/30 text-purple-100"
+                      >
+                        Open Synced Interview Prep
+                      </Button>
+                    </div>
+                  </div>
+
+                  {missionPlanTopics.length > 0 && (
+                    <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
+                      <p className="mb-3 text-sm font-semibold text-blue-100">Mission focus areas</p>
+                      <div className="flex flex-wrap gap-2">
+                        {missionPlanTopics.map((topic) => (
+                          <Badge key={topic} className="border-blue-400/30 bg-blue-400/10 text-blue-100">
+                            {topic}
+                          </Badge>
+                        ))}
                       </div>
-                      <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-blue-400/30 px-4 py-2 text-sm font-medium text-blue-100 transition hover:bg-blue-400/10">
-                        {resumeUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                        {resumeUploading ? "Reading..." : "Choose File"}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+                <Card className="overflow-hidden border-blue-400/20 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-white/[0.02]">
+                  <CardContent className="relative p-6">
+                    <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-blue-500/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 left-10 h-56 w-56 rounded-full bg-purple-500/20 blur-3xl" />
+                    <div className="relative space-y-6">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <Badge className="mb-3 border-blue-400/30 bg-blue-500/10 text-blue-200">
+                            <FileText className="mr-1 h-3 w-3" />
+                            Smart Resume Upload
+                          </Badge>
+                          <h2 className="text-2xl font-bold text-white">Upload once. Let Zentric analyze the rest.</h2>
+                          <p className="mt-2 max-w-xl text-sm leading-6 text-gray-400">
+                            Add your resume and Zentric will extract the text, calculate your resume score, find weak areas,
+                            and connect the result to interview prep plus company readiness.
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+                          <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Status</p>
+                          <p className={hasResumeUpload ? "text-sm font-semibold text-emerald-200" : "text-sm font-semibold text-yellow-100"}>
+                            {hasResumeUpload ? "Resume uploaded" : "Waiting for resume"}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {hasResumeUpload ? `${resumeWordCount} words extracted` : "Upload to unlock scoring"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <label className="group flex cursor-pointer flex-col items-center justify-center rounded-[1.35rem] border border-dashed border-blue-300/30 bg-white/[0.04] px-6 py-10 text-center transition hover:border-blue-300/60 hover:bg-blue-400/10">
+                        <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/20 transition group-hover:scale-105">
+                          {resumeUploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <FileUp className="h-6 w-6" />}
+                        </span>
+                        <span className="text-base font-semibold text-white">
+                          {resumeUploading ? "Reading your resume..." : "Choose your resume file"}
+                        </span>
+                        <span className="mt-2 max-w-md text-sm leading-6 text-gray-400">
+                          PDF, DOCX, DOC, TXT, MD, CSV, or JSON. Keep the input simple — the intelligence appears after upload.
+                        </span>
                         <input
                           type="file"
                           className="hidden"
@@ -554,246 +1065,440 @@ export default function CareerHubPage() {
                           }}
                         />
                       </label>
-                    </div>
-                  </div>
-                  <Field label="Skills">
-                    <Textarea rows={3} value={profile.skillsText} onChange={(event) => setProfile({ ...profile, skillsText: event.target.value })} placeholder="React, Next.js, TypeScript, DSA, PostgreSQL..." />
-                  </Field>
-                  <Field label="Projects">
-                    <Textarea rows={5} value={profile.projectsText} onChange={(event) => setProfile({ ...profile, projectsText: event.target.value })} placeholder="Paste your project bullets here..." />
-                  </Field>
-                  <Field label="Experience">
-                    <Textarea rows={4} value={profile.experienceText} onChange={(event) => setProfile({ ...profile, experienceText: event.target.value })} placeholder="Internships, freelance work, leadership, responsibilities..." />
-                  </Field>
-                  <Field label="Full Resume Text">
-                    <Textarea rows={6} value={profile.resumeText} onChange={(event) => setProfile({ ...profile, resumeText: event.target.value })} placeholder="Paste your full resume text for deeper analysis..." />
-                  </Field>
-                  <Button onClick={() => saveProfile()} disabled={saving} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save and Recalculate
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Resume Score</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <BigScore value={analysis?.resumeScore} label="Resume Score" />
-                  <SectionList title="Strong Sections" items={analysis?.strongSections ?? []} positive />
-                  <SectionList title="Needs Improvement" items={analysis?.needsImprovement ?? []} />
-                  <div className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-4">
-                    <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-purple-100">
-                      <WandSparkles className="h-4 w-4" />
-                      Suggested Project Bullet
-                    </p>
-                    <p className="text-sm leading-6 text-gray-300">
-                      {analysis?.suggestedBullet || "Add your resume/profile data first, then Zentric will rewrite your strongest project bullet."}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
 
-          {activeTab === "ats" && (
-            <div className="grid gap-5 xl:grid-cols-[0.8fr_1fr]">
-              <Card>
-                <CardHeader><CardTitle>ATS & Job Description Match</CardTitle></CardHeader>
-                <CardContent className="space-y-5">
-                  <BigScore value={analysis?.atsScore} label="ATS Score" />
-                  <BigScore value={analysis?.jobDescriptionMatch} label="Job Description Match" />
-                  <Field label="Paste Target Job Description">
-                    <Textarea
-                      rows={7}
-                      value={profile.jobDescriptionText}
-                      onChange={(event) => setProfile({ ...profile, jobDescriptionText: event.target.value })}
-                      placeholder="Paste the job description here. Zentric will compare your resume against this exact role..."
-                    />
-                  </Field>
-                  <Field label="Extra Target Keywords">
-                    <Textarea rows={4} value={profile.preferredKeywords} onChange={(event) => setProfile({ ...profile, preferredKeywords: event.target.value })} />
-                  </Field>
-                  <Button onClick={() => saveProfile()} disabled={saving} variant="outline" className="border-blue-400/30 text-blue-200">
-                    Update Match Analysis
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader><CardTitle>Keywords</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <KeywordBox title="Matched Keywords" keywords={analysis?.matchedKeywords ?? []} positive />
-                  <KeywordBox title="Keywords Missing" keywords={analysis?.missingKeywords ?? []} />
-                  <KeywordBox title="Missing From Job Description" keywords={analysis?.missingFromJobDescription ?? []} />
-                </CardContent>
-              </Card>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <ResumeInsightTile title="Input" value="Upload only" description="No manual form filling." />
+                        <ResumeInsightTile title="Formats" value="7 types" description="PDF, DOCX, text, and more." />
+                        <ResumeInsightTile title="Output" value="AI scan" description="Scores, gaps, and next steps." />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-purple-400/20">
+                  <CardHeader>
+                    <CardTitle>Resume Intelligence</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <BigScore value={analysis?.resumeScore} label="ATS Resume Score" />
+                    <p className="text-xs leading-5 text-gray-500">
+                      This score is calculated like an ATS-style resume scan: keyword match, required sections,
+                      selected role/company expectations, impact metrics, formatting, and recruiter quality signals.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <ResumeInsightTile title="Matched Skills" value={isAnalyzed ? `${matchedKeywordCount}` : "Locked"} description="Proof Zentric found." />
+                      <ResumeInsightTile title="Missing Skills" value={isAnalyzed ? `${missingKeywordCount}` : "Locked"} description="Areas to improve." />
+                    </div>
+                    {(analysis?.scoreBreakdown ?? []).length > 0 && (
+                      <div className="grid gap-3">
+                        {(analysis?.scoreBreakdown ?? []).map((item) => (
+                          <ScoreBreakdownRow key={item.label} item={item} />
+                        ))}
+                      </div>
+                    )}
+                    {!isAnalyzed && (
+                      <div className="rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-4 text-sm leading-6 text-yellow-100">
+                        Upload your resume first. After upload, this panel will show your score, strongest sections,
+                        improvement areas, missing skills, and AI rewrite suggestions.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Strengths & Weak Areas</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <SectionList title="Strong Sections" items={analysis?.strongSections ?? []} positive />
+                    <SectionList title="Needs Improvement" items={analysis?.needsImprovement ?? []} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Missing Skills</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {(analysis?.missingKeywords ?? []).length === 0 ? (
+                        <span className="text-sm text-gray-500">
+                          {isAnalyzed ? "No major missing skills found." : "Upload your resume to see skill gaps."}
+                        </span>
+                      ) : (analysis?.missingKeywords ?? []).slice(0, 10).map((keyword) => (
+                        <Badge key={keyword} className="border-yellow-400/30 bg-yellow-400/10 text-yellow-200">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-purple-400/20 bg-purple-500/[0.04]">
+                  <CardHeader>
+                    <CardTitle>Actionable Resume Fixes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {(analysis?.suggestions ?? []).length === 0 ? (
+                      <p className="text-sm leading-6 text-gray-500">Upload your resume to get targeted improvements.</p>
+                    ) : (analysis?.suggestions ?? []).slice(0, 4).map((suggestion) => (
+                      <div key={suggestion} className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-300">
+                        <WandSparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-300" />
+                        {suggestion}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
             </div>
           )}
 
           {activeTab === "interview" && (
-            <div className="grid gap-5 lg:grid-cols-2">
-              <Card>
-                <CardHeader><CardTitle>AI Interview Prep</CardTitle></CardHeader>
+            <div className="space-y-5">
+              <Card className="overflow-hidden border-cyan-400/20 bg-gradient-to-br from-cyan-500/[0.08] via-blue-500/[0.04] to-purple-500/[0.04]">
+                <CardHeader>
+                  <Badge className="w-fit border-cyan-400/30 bg-cyan-400/10 text-cyan-100">
+                    Create Interview
+                  </Badge>
+                  <CardTitle className="text-2xl">Configure the next simulation</CardTitle>
+                  <p className="max-w-3xl text-sm leading-6 text-gray-400">
+                    Choose the mode, target role, and difficulty. Zentric creates a focused interview room,
+                    scores your answer, and sends weak areas back to AI Coach.
+                  </p>
+                </CardHeader>
                 <CardContent className="space-y-5">
-                  <Field label="Which interview do you want to prepare?">
-                    <Select value={selectedInterview} onValueChange={setSelectedInterview}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {interviewTracks.map((track) => (
-                          <SelectItem key={track.id} value={track.id}>{track.label}</SelectItem>
-                        ))}
-                        <SelectItem value="custom">Custom Company / Role</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  {selectedInterview === "custom" && (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <Field label="Custom Company">
+                  <div className={`grid gap-4 ${isCustomSimulationRole ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
+                    {!isCustomSimulationRole && (
+                      <Field label="Interview mode">
+                        <Select value={simulationMode} onValueChange={(value) => setSimulationMode(value as (typeof interviewModes)[number]["id"])}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {interviewModes.map((mode) => (
+                              <SelectItem key={mode.id} value={mode.id}>{mode.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                    <Field label="Target role">
+                      <Select value={simulationRole} onValueChange={setSimulationRole}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {targetRoles.map((role) => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="Difficulty">
+                      <Select value={simulationDifficulty} onValueChange={(value) => setSimulationDifficulty(value as (typeof interviewDifficulties)[number])}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {interviewDifficulties.map((level) => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+
+                  {simulationRole === "Custom Role" && (
+                    <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+                      <Field label="Custom interview role">
                         <Input
-                          value={customInterviewCompany}
-                          onChange={(event) => setCustomInterviewCompany(event.target.value)}
-                          placeholder="e.g. Netflix, Flipkart, TCS, Stripe"
+                          value={customSimulationRole}
+                          onChange={(event) => setCustomSimulationRole(event.target.value)}
+                          placeholder="e.g. ML Intern, Product Analyst, DevOps Engineer"
                         />
                       </Field>
-                      <Field label="Custom Role">
-                        <Input
-                          value={customInterviewRole}
-                          onChange={(event) => setCustomInterviewRole(event.target.value)}
-                          placeholder="e.g. Frontend Engineer, Backend Intern"
-                        />
-                      </Field>
+                      <p className="mt-3 text-xs leading-5 text-cyan-100/70">
+                        Custom role uses one clean Custom Interview mode. Zentric will generate role-fit, project,
+                        skill-gap, and readiness questions for the role you enter.
+                      </p>
                     </div>
                   )}
-                  <div className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-4">
-                    <p className="text-sm font-semibold text-purple-100">{interviewTrack.label}</p>
-                    <p className="mt-1 text-sm leading-6 text-gray-300">{interviewTrack.focus}</p>
+
+                  {isCustomSimulationRole ? (
+                    <div className="rounded-2xl border border-purple-400/20 bg-purple-500/[0.06] p-4">
+                      <p className="font-semibold text-white">Custom Interview</p>
+                      <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+                        No DSA/HR/Mixed selection needed here. This room adapts to your custom target role and
+                        evaluates whether your answers prove fit, skills, projects, and growth plan.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-5">
+                      {interviewModes.map((mode) => (
+                        <button
+                          key={mode.id}
+                          onClick={() => setSimulationMode(mode.id)}
+                          className={`rounded-2xl border p-4 text-left transition ${
+                            simulationMode === mode.id
+                              ? "border-cyan-400/40 bg-cyan-400/10"
+                              : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                          }`}
+                        >
+                          <p className="font-semibold text-white">{mode.label}</p>
+                          <p className="mt-2 text-xs leading-5 text-gray-500">{mode.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {effectiveSimulationModeLabel} · {resolvedSimulationRole} · {simulationDifficulty}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {isCustomSimulationRole
+                          ? "Custom interview mode will generate questions from the role you enter."
+                          : `Resume-based mode ${hasResumeUpload ? "can use your uploaded resume." : "works better after resume upload."}`}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={launchInterviewSimulation}
+                      disabled={interviewActionLoading}
+                      className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-black hover:from-cyan-400 hover:to-emerald-400"
+                    >
+                      {interviewActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                      Launch room
+                    </Button>
                   </div>
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-white">Questions to Practice</p>
-                    {interviewTrack.questions.map((item) => (
-                      <div key={item} className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-300">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-300" />
-                        {item}
+
+                  {activeSimulationQuestion && (
+                    <div className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+                      <div className="rounded-2xl border border-cyan-400/20 bg-black/30 p-4">
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <Badge className="border-cyan-400/30 bg-cyan-400/10 text-cyan-100">
+                            Question {currentSimulationIndex + 1}/{simulationQuestions.length}
+                          </Badge>
+                          <Badge className="border-purple-400/30 bg-purple-400/10 text-purple-100">
+                            {activeSimulationQuestion.mode}
+                          </Badge>
+                        </div>
+                        <p className="text-lg font-semibold leading-7 text-white">{activeSimulationQuestion.question}</p>
+                        <Textarea
+                          value={simulationAnswer}
+                          onChange={(event) => setSimulationAnswer(event.target.value)}
+                          placeholder="Answer like a real interview. Use structure, examples, tradeoffs, and impact..."
+                          className="mt-4 min-h-36"
+                        />
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Button
+                            onClick={submitSimulationAnswer}
+                            disabled={interviewActionLoading}
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                          >
+                            {interviewActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Score answer
+                          </Button>
+                          <Button
+                            onClick={nextSimulationQuestion}
+                            variant="outline"
+                            className="border-cyan-400/30 text-cyan-100"
+                            disabled={!simulationFeedback || interviewActionLoading}
+                          >
+                            {currentSimulationIndex < simulationQuestions.length - 1 ? "Next question" : "Finish simulation"}
+                          </Button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-white">Technical Questions</p>
-                    {technicalQuestions.map((item) => (
-                      <div key={item} className="flex gap-3 rounded-xl border border-blue-400/20 bg-blue-500/[0.06] p-3 text-sm text-gray-200">
-                        <Target className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-300" />
-                        {item}
+
+                      <div className="space-y-3">
+                        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+                          <p className="text-xs uppercase tracking-[0.16em] text-emerald-200">Simulation Score</p>
+                          <p className="mt-2 text-4xl font-bold text-white">{simulationAverage || 0}%</p>
+                          <p className="mt-1 text-xs text-gray-400">{simulationHistory.length} answer{simulationHistory.length === 1 ? "" : "s"} scored</p>
+                        </div>
+                        {simulationFeedback ? (
+                          <>
+                            <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
+                              <p className="font-semibold text-blue-100">AI Mentor Feedback</p>
+                              <p className="mt-2 text-sm leading-6 text-gray-300">{simulationFeedback}</p>
+                            </div>
+
+                            {activeScoredAnswer && (
+                              <>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <MiniScore label="Technical depth" value={activeScoredAnswer.technicalDepth ?? activeScoredAnswer.score} />
+                                  <MiniScore label="Clarity" value={activeScoredAnswer.clarity ?? activeScoredAnswer.score} />
+                                  <MiniScore label="Structure" value={activeScoredAnswer.structure ?? activeScoredAnswer.score} />
+                                  <MiniScore label="Role fit" value={activeScoredAnswer.roleFit ?? activeScoredAnswer.score} />
+                                  <MiniScore label="Confidence" value={activeScoredAnswer.confidence ?? activeScoredAnswer.score} />
+                                  <MiniScore label="Resume proof" value={activeScoredAnswer.resumeProof ?? activeScoredAnswer.score} />
+                                </div>
+
+                                <MentorPanel
+                                  title="Ideal answer"
+                                  tone="cyan"
+                                  content={activeScoredAnswer.idealAnswer ?? "Use the ideal answer signals and cover the core points clearly."}
+                                />
+                                <MentorPanel
+                                  title="Improved version"
+                                  tone="purple"
+                                  content={activeScoredAnswer.improvedAnswer ?? "Rewrite with structure, one concrete example, tradeoffs, and impact."}
+                                />
+                                <MentorPanel
+                                  title="Follow-up question"
+                                  tone="emerald"
+                                  content={activeScoredAnswer.followUpQuestion ?? "What tradeoff would you mention if the interviewer pushed harder?"}
+                                />
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                            <p className="font-semibold text-white">Ideal answer signals</p>
+                            <ul className="mt-2 space-y-2 text-sm text-gray-400">
+                              {activeSimulationQuestion.idealPoints.map((point) => (
+                                <li key={point}>• {point}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-white">Resume & JD Generated Questions</p>
-                    {(analysis?.generatedInterviewQuestions ?? []).map((item) => (
-                      <div key={item} className="flex gap-3 rounded-xl border border-purple-400/20 bg-purple-500/[0.08] p-3 text-sm text-gray-200">
-                        <WandSparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-300" />
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-white">Personalized Resume-Based Prep</p>
-                    {(analysis?.interviewPrep ?? []).map((item) => (
-                      <div key={item} className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-300">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-300" />
-                      {item}
-                      </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader><CardTitle>Mock Interview Videos & Dream Match</CardTitle></CardHeader>
-                <CardContent className="space-y-5">
-                  <BigScore value={analysis?.resumeMatch} label={`${analysis?.dreamRole ?? "Dream Job"} Match`} />
-                  <div className="space-y-3">
-                    <p className="flex items-center gap-2 text-sm font-medium text-white">
-                      <PlayCircle className="h-4 w-4 text-red-300" />
-                      Mock Interview Videos
+
+              {simulationFinished && interviewReport && (
+                <Card className="border-emerald-400/20 bg-emerald-500/[0.04]">
+                  <CardHeader>
+                    <Badge className="w-fit border-emerald-400/30 bg-emerald-400/10 text-emerald-100">
+                      AI Interview Evaluation Report
+                    </Badge>
+                    <CardTitle className="text-2xl">Post-interview report</CardTitle>
+                    <p className="text-sm leading-6 text-gray-400">
+                      Zentric analyzed your answers, interview mode, resume readiness, and ideal answer signals.
                     </p>
-                    {interviewTrack.videos.map((video) => (
-                      <a
-                        key={video.url}
-                        href={video.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-gray-200 transition hover:border-red-300/30 hover:bg-red-400/10"
-                      >
-                        <span className="flex items-center gap-2">
-                          <PlayCircle className="h-4 w-4 text-red-300" />
-                          {video.title}
-                        </span>
-                        <ArrowRight className="h-4 w-4 text-gray-500" />
-                      </a>
-                    ))}
-                  </div>
-                  <SectionList title="Missing Skills" items={analysis?.missingKeywords.slice(0, 5) ?? []} />
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-white">Recommended Learning Path</p>
-                    {(analysis?.recommendedLearningPath ?? []).map((item) => (
-                      <div key={item.topic} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2 text-sm">
-                        <span className="text-gray-200">{item.topic}</span>
-                        <span className="text-xs text-blue-300">{item.action}</span>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="grid gap-3 md:grid-cols-4">
+                      <ReportScore label="Overall" value={interviewReport.overall} />
+                      <ReportScore label="Technical" value={interviewReport.technical} />
+                      <ReportScore label="Communication" value={interviewReport.communication} />
+                      <ReportScore label="Resume Alignment" value={interviewReport.resumeAlignment} />
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <ReportScore label="Answer Structure" value={interviewReport.structure} />
+                      <ReportScore label="Interview Confidence" value={interviewReport.confidence} />
+                    </div>
+
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p className="mb-3 font-semibold text-white">Strong answers</p>
+                        {interviewReport.strongAnswers.length === 0 ? (
+                          <p className="text-sm text-gray-500">No strong answer yet. Aim for specific examples, tradeoffs, and measurable impact.</p>
+                        ) : interviewReport.strongAnswers.map((item) => (
+                          <div key={item.question} className="mb-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-50">
+                            <p className="font-medium">{item.score}% · {item.question}</p>
+                            <p className="mt-1 text-emerald-100/70">{item.feedback}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p className="mb-3 font-semibold text-white">Weak answers</p>
+                        {interviewReport.weakAnswers.length === 0 ? (
+                          <p className="text-sm text-gray-500">No major weak answer found. Keep practicing at higher difficulty.</p>
+                        ) : interviewReport.weakAnswers.map((item) => (
+                          <div key={item.question} className="mb-3 rounded-xl border border-yellow-400/20 bg-yellow-400/10 p-3 text-sm text-yellow-50">
+                            <p className="font-medium">{item.score}% · {item.question}</p>
+                            <p className="mt-1 text-yellow-100/70">{item.feedback}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+                      <div className="rounded-2xl border border-purple-400/20 bg-purple-400/10 p-4">
+                        <p className="mb-3 font-semibold text-purple-100">Topics to revise</p>
+                        <div className="flex flex-wrap gap-2">
+                          {interviewReport.plannerTopics.map((topic) => (
+                            <Badge key={topic} className="border-purple-400/30 bg-purple-400/10 text-purple-100">
+                              {topic}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
+                        <p className="mb-3 font-semibold text-blue-100">Make this actionable</p>
+                        <div className="flex flex-wrap gap-3">
+                          <Button
+                            onClick={addInterviewWeakAreasToPlanner}
+                            disabled={savingInterviewReport}
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                          >
+                            {savingInterviewReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
+                            Add weak areas to Planner
+                          </Button>
+                          <Button
+                            onClick={saveInterviewReportToSecondBrain}
+                            disabled={savingInterviewReport}
+                            variant="outline"
+                            className="border-blue-400/30 text-blue-100"
+                          >
+                            Save to Second Brain
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {interviewSessions.length > 0 && (
+                <Card className="border-white/10 bg-white/[0.03]">
+                  <CardHeader>
+                    <CardTitle>Saved Interview Sessions</CardTitle>
+                    <p className="text-sm leading-6 text-gray-400">
+                      Your mock interviews are now stored, so Zentric can remember attempts, scores, weak areas, and progress.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 md:grid-cols-2">
+                    {interviewSessions.slice(0, 4).map((session) => (
+                      <div key={session.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-white">{session.role}</p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {session.mode === "custom" ? "Custom Interview" : session.mode} · {session.difficulty} · {session.status}
+                            </p>
+                          </div>
+                          <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-100">
+                            {session.averageScore ?? 0}%
+                          </Badge>
+                        </div>
+                        <div className="mt-3">
+                          <Progress value={session.averageScore ?? 0} />
+                        </div>
+                        <p className="mt-3 text-xs leading-5 text-gray-500">
+                          {session.answers.length}/{session.questions.length} answers scored
+                          {session.report?.plannerTopics?.length
+                            ? ` · Revise: ${session.report.plannerTopics.slice(0, 2).join(", ")}`
+                            : ""}
+                        </p>
+                        <Button
+                          onClick={() => openSavedInterviewSession(session)}
+                          variant="outline"
+                          className="mt-4 border-cyan-400/30 text-cyan-100"
+                        >
+                          Open session
+                        </Button>
                       </div>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
             </div>
           )}
 
-          {activeTab === "jobs" && (
-            <div className="space-y-5">
-              <div className="grid gap-3 md:grid-cols-5">
-                {jobStats.map((item) => (
-                  <div key={item.status} className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-center">
-                    <p className="text-2xl font-bold text-white">{item.count}</p>
-                    <p className="text-xs capitalize text-gray-500">{item.status}</p>
-                  </div>
-                ))}
-              </div>
-              <Card>
-                <CardHeader><CardTitle>Add Job</CardTitle></CardHeader>
-                <CardContent className="grid gap-3 lg:grid-cols-[1fr_1fr_160px_1fr_auto]">
-                  <Input placeholder="Company" value={jobForm.company} onChange={(event) => setJobForm({ ...jobForm, company: event.target.value })} />
-                  <Input placeholder="Role" value={jobForm.role} onChange={(event) => setJobForm({ ...jobForm, role: event.target.value })} />
-                  <Select value={jobForm.status} onValueChange={(value) => setJobForm({ ...jobForm, status: value })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{statusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Input placeholder="Location / URL" value={jobForm.location} onChange={(event) => setJobForm({ ...jobForm, location: event.target.value })} />
-                  <Button onClick={addJob} disabled={jobSaving || !jobForm.company.trim() || !jobForm.role.trim()}>
-                    {jobSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  </Button>
-                </CardContent>
-              </Card>
-              <div className="space-y-3">
-                {jobs.length === 0 ? (
-                  <Card><CardContent className="py-10 text-center text-sm text-gray-500">No jobs tracked yet.</CardContent></Card>
-                ) : jobs.map((job) => (
-                  <Card key={job.id}>
-                    <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
-                      <div className="flex-1">
-                        <p className="font-semibold text-white">{job.role}</p>
-                        <p className="text-sm text-gray-400">{job.company}{job.location ? ` • ${job.location}` : ""}</p>
-                      </div>
-                      <Select value={job.status} onValueChange={(value) => updateJobStatus(job.id, value)}>
-                        <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>{statusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="icon" className="text-gray-500 hover:text-red-300" onClick={() => deleteJob(job.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
 
           {activeTab === "companies" && (
             <div className="space-y-5">
@@ -857,6 +1562,16 @@ export default function CareerHubPage() {
                         Upload or paste your resume first. Then Zentric can compare it against {selectedCompany.company} expectations.
                       </div>
                     )}
+                    {isAnalyzed && (
+                      <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+                        <p className="text-xs uppercase tracking-[0.16em] text-emerald-200">Next Best Action</p>
+                        <p className="mt-2 text-sm leading-6 text-gray-200">
+                          {companyReadinessTopics[0]
+                            ? `Master ${companyReadinessTopics[0]} first. It is currently the fastest way to improve your ${selectedCompany.company} readiness.`
+                            : `Keep strengthening resume evidence and interview practice for ${selectedCompany.company}.`}
+                        </p>
+                      </div>
+                    )}
                     <div className="grid gap-4 md:grid-cols-3">
                       <SectionList title="Skills Missing" items={selectedCompany.weakestSkills} />
                       <SectionList title="Areas To Master" items={selectedCompany.missingTopics} />
@@ -869,36 +1584,44 @@ export default function CareerHubPage() {
                     </div>
                     <div className="rounded-2xl border border-purple-400/20 bg-purple-500/10 p-4">
                       <p className="mb-2 text-sm font-semibold text-purple-100">Recommended Learning Path</p>
-                      <div className="grid gap-2 md:grid-cols-2">
-                        {(selectedCompany.missingTopics.length ? selectedCompany.missingTopics : analysis?.missingKeywords.slice(0, 4) ?? []).map((topic) => (
-                          <div key={topic} className="flex items-center justify-between rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-gray-200">
-                            <span>{topic}</span>
-                            <ArrowRight className="h-4 w-4 text-purple-300" />
-                          </div>
-                        ))}
-                      </div>
+                      {companyReadinessTopics.length === 0 ? (
+                        <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm leading-6 text-gray-400">
+                          No major missing topics detected yet. Keep adding resume proof, interview reports, and project evidence so Zentric can keep refining this roadmap.
+                        </p>
+                      ) : (
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {companyReadinessTopics.map((topic) => (
+                            <div key={topic} className="flex items-center justify-between rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-gray-200">
+                              <span>{topic}</span>
+                              <ArrowRight className="h-4 w-4 text-purple-300" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <Button
+                        onClick={addCompanyRoadmapToPlanner}
+                        disabled={savingCompanyReadiness || !isAnalyzed || companyReadinessTopics.length === 0}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                      >
+                        {savingCompanyReadiness ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
+                        Add Roadmap to Planner
+                      </Button>
+                      <Button
+                        onClick={saveCompanyReadinessToSecondBrain}
+                        disabled={savingCompanyReadiness || !isAnalyzed}
+                        variant="outline"
+                        className="border-blue-400/30 text-blue-100"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Save to Second Brain
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {(analysis?.companies ?? []).map((company) => (
-                  <Card key={company.company} className="transition hover:-translate-y-1 hover:border-blue-400/30">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        {company.company}
-                        <span className="text-blue-200">{company.readiness === null ? "Not analyzed yet" : `${company.readiness}%`}</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Progress value={company.readiness ?? 0} />
-                      <SectionList title="Weakest Skills" items={company.weakestSkills} />
-                      <p className="text-sm text-gray-400">Estimated prep: <span className="text-white">{company.estimatedPrepTime}</span></p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             </div>
           )}
         </>
@@ -930,6 +1653,16 @@ function ScoreTile({ label, value }: { label: string; value?: number | null }) {
   );
 }
 
+function MissionSignal({ label, value, description }: { label: string; value: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">{label}</p>
+      <p className="mt-2 truncate text-lg font-bold text-white">{value}</p>
+      <p className="mt-1 text-xs leading-5 text-gray-500">{description}</p>
+    </div>
+  );
+}
+
 function BigScore({ value, label }: { value?: number | null; label: string }) {
   const hasScore = typeof value === "number";
 
@@ -947,6 +1680,81 @@ function BigScore({ value, label }: { value?: number | null; label: string }) {
     </div>
   );
 }
+function ReportScore({ label, value }: { label: string; value: number }) {
+  const color = value >= 75 ? "text-emerald-100" : value >= 55 ? "text-yellow-100" : "text-red-100";
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <p className="text-xs uppercase tracking-[0.16em] text-gray-500">{label}</p>
+      <p className={`mt-2 text-3xl font-bold ${color}`}>{value}%</p>
+      <Progress value={value} className="mt-3" />
+    </div>
+  );
+}
+
+function MiniScore({ label, value }: { label: string; value: number }) {
+  const color =
+    value >= 75
+      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
+      : value >= 50
+        ? "border-yellow-400/20 bg-yellow-400/10 text-yellow-100"
+        : "border-red-400/20 bg-red-400/10 text-red-100";
+
+  return (
+    <div className={`rounded-xl border p-3 ${color}`}>
+      <p className="text-[10px] uppercase tracking-[0.14em] opacity-70">{label}</p>
+      <p className="mt-1 text-xl font-bold">{value}%</p>
+    </div>
+  );
+}
+
+function MentorPanel({
+  title,
+  content,
+  tone,
+}: {
+  title: string;
+  content: string;
+  tone: "cyan" | "purple" | "emerald";
+}) {
+  const tones = {
+    cyan: "border-cyan-400/20 bg-cyan-400/10 text-cyan-100",
+    purple: "border-purple-400/20 bg-purple-400/10 text-purple-100",
+    emerald: "border-emerald-400/20 bg-emerald-400/10 text-emerald-100",
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 ${tones[tone]}`}>
+      <p className="font-semibold">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-gray-200">{content}</p>
+    </div>
+  );
+}
+
+function ScoreBreakdownRow({ item }: { item: { label: string; value: number; detail: string } }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-white">{item.label}</p>
+          <p className="mt-1 text-xs leading-5 text-gray-500">{item.detail}</p>
+        </div>
+        <span className="text-sm font-semibold text-blue-200">{item.value}%</span>
+      </div>
+      <Progress value={item.value} />
+    </div>
+  );
+}
+
+function ResumeInsightTile({ title, value, description }: { title: string; value: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{title}</p>
+      <p className="mt-2 text-lg font-bold text-white">{value}</p>
+      <p className="mt-1 text-xs leading-5 text-gray-500">{description}</p>
+    </div>
+  );
+}
 
 function SectionList({ title, items, positive = false }: { title: string; items: string[]; positive?: boolean }) {
   return (
@@ -954,29 +1762,14 @@ function SectionList({ title, items, positive = false }: { title: string; items:
       <p className="mb-2 text-sm font-medium text-white">{title}</p>
       <div className="space-y-2">
         {items.length === 0 ? (
-          <p className="text-sm text-gray-500">No items yet.</p>
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-gray-500">
+            Waiting for resume or mission data.
+          </div>
         ) : items.map((item) => (
           <div key={item} className="flex items-center gap-2 text-sm text-gray-300">
             {positive ? <CheckCircle2 className="h-4 w-4 text-emerald-300" /> : <Bot className="h-4 w-4 text-purple-300" />}
             {item}
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function KeywordBox({ title, keywords, positive = false }: { title: string; keywords: string[]; positive?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="mb-3 text-sm font-medium text-white">{title}</p>
-      <div className="flex flex-wrap gap-2">
-        {keywords.length === 0 ? (
-          <span className="text-sm text-gray-500">Nothing here yet.</span>
-        ) : keywords.map((keyword) => (
-          <Badge key={keyword} className={positive ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-yellow-400/30 bg-yellow-400/10 text-yellow-200"}>
-            {keyword}
-          </Badge>
         ))}
       </div>
     </div>

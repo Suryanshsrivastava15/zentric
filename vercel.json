@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma db push && npm run build",
+  "buildCommand": "prisma db push --accept-data-loss && npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "regions": ["sfo1"],

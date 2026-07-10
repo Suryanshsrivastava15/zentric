@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeCareerProfile } from "@/lib/career-engine";
+import { recordCoachEvent, updateCoachGoalMemory } from "@/lib/ai-coach";
 
 const defaultDreamRole = "Your Dream Role";
 const defaultTargetCompany = "Your Target Company";
@@ -22,27 +23,10 @@ type StoredCareerProfile = {
   updatedAt: Date;
 };
 
-type StoredJobApplication = {
-  id: string;
-  company: string;
-  role: string;
-  status: string;
-  location: string | null;
-  url: string | null;
-  notes: string | null;
-  appliedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: string;
-};
-
 const careerDb = prisma as typeof prisma & {
   careerProfile: {
     findUnique(args: unknown): Promise<StoredCareerProfile | null>;
     upsert(args: unknown): Promise<StoredCareerProfile>;
-  };
-  jobApplication: {
-    findMany(args: unknown): Promise<StoredJobApplication[]>;
   };
 };
 
@@ -81,20 +65,13 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [profile, jobs] = await Promise.all([
-    careerDb.careerProfile.findUnique({ where: { userId: session.user.id } }),
-    careerDb.jobApplication.findMany({
-      where: { userId: session.user.id },
-      orderBy: { updatedAt: "desc" },
-    }),
-  ]);
+  const profile = await careerDb.careerProfile.findUnique({ where: { userId: session.user.id } });
 
   const normalizedProfile = normalizeCareerDefaults(profile);
 
   return NextResponse.json({
     profile: normalizedProfile,
     analysis: analyzeCareerProfile(normalizedProfile),
-    jobs,
   });
 }
 
@@ -117,6 +94,21 @@ export async function PUT(req: NextRequest) {
   });
 
   const normalizedProfile = normalizeCareerDefaults(profile);
+  await updateCoachGoalMemory(session.user.id, normalizedProfile.dreamRole, normalizedProfile.targetCompany);
+  await recordCoachEvent(session.user.id, {
+    type: normalizedProfile.resumeText ? "resume_uploaded_or_updated" : "career_goal_updated",
+    module: "Career Hub",
+    title: normalizedProfile.resumeText
+      ? "Resume profile updated"
+      : `Career goal set: ${normalizedProfile.dreamRole}`,
+    detail: `Target: ${normalizedProfile.dreamRole} at ${normalizedProfile.targetCompany}. Coach recommendations will use this mission.`,
+    impact: normalizedProfile.resumeText ? 4 : 3,
+    metadata: {
+      dreamRole: normalizedProfile.dreamRole,
+      targetCompany: normalizedProfile.targetCompany,
+      hasResume: Boolean(normalizedProfile.resumeText),
+    },
+  });
 
   return NextResponse.json({
     profile: normalizedProfile,

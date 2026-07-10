@@ -1,31 +1,42 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  Plus,
-  Trash2,
+  Bell,
+  BellOff,
+  BrainCircuit,
+  BookOpen,
+  Calendar,
+  Check,
   CheckCircle,
   Circle,
-  Flag,
-  Calendar,
+  Clock3,
   Filter,
+  Flag,
+  GraduationCap,
   Loader2,
   Pencil,
+  Plus,
+  Repeat2,
+  Sparkles,
+  Target,
+  Trash2,
   X,
-  Check,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -33,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
 
 interface Task {
@@ -46,13 +57,134 @@ interface Task {
   createdAt: string;
 }
 
+type CoachSnapshot = {
+  dailyMission?: {
+    mission: string;
+    estimatedTime: string;
+    growthScore: number;
+    readiness: string;
+    why: string;
+    tasks: string[];
+  };
+  memory: {
+    careerGoal: string;
+    dreamCompany: string;
+    weakTopics: string;
+    dailyStudyTime: string;
+    targetDeadline: string;
+  };
+  metrics: {
+    growthScore: number;
+  };
+  dailyPlan: Array<{
+    id: string;
+    title: string;
+    phase: string;
+    day: number;
+    time: string;
+    duration: string;
+    priority: string;
+    videoUrl: string;
+    resourceUrl: string;
+    codingUrl: string;
+    questions: string[];
+    mastered: boolean;
+    recapPrompt: string;
+    completedSteps?: string[];
+    difficulty?: string;
+    estimatedTime?: string;
+  }>;
+  dayRecap: {
+    day: number;
+    completedTopics: number;
+    summary: string;
+    topics: string[];
+  };
+  revisionQueue?: Array<{
+    topicId: string;
+    topicTitle: string;
+    phase: string;
+    daysSince: number;
+    due: boolean;
+    reason: string;
+    actions: string[];
+    quiz: string[];
+  }>;
+};
+
+type ReminderSettings = {
+  enabled: boolean;
+  leadMinutes: number;
+};
+
+const reminderStorageKey = "zentric-planner-reminders";
+const learningStepLabels = [
+  { id: "goal", label: "Goal" },
+  { id: "video", label: "Video" },
+  { id: "notes", label: "Notes" },
+  { id: "quiz", label: "Quiz" },
+  { id: "practice", label: "Practice" },
+  { id: "project", label: "Project" },
+  { id: "reflection", label: "Reflect" },
+];
+
+function getTaskDueDate(deadline?: string | null) {
+  if (!deadline) return null;
+  const date = new Date(deadline);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(9, 0, 0, 0);
+  return date;
+}
+
+function getRelativeReminderLabel(task: Task, leadMinutes: number) {
+  const due = getTaskDueDate(task.deadline);
+  if (!due) return "No reminder";
+  const reminderAt = new Date(due.getTime() - leadMinutes * 60_000);
+  const now = new Date();
+  const dueStart = new Date(due);
+  dueStart.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (dueStart.getTime() < today.getTime()) return "Overdue";
+  if (dueStart.getTime() === today.getTime()) return "Due today";
+  if (reminderAt <= now) return "Reminder ready";
+  return `Reminder ${reminderAt.toLocaleDateString()} ${reminderAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function getDeadlineDaysLeft(deadline?: string) {
+  if (!deadline) return null;
+  const date = new Date(deadline);
+  if (Number.isNaN(date.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((date.getTime() - today.getTime()) / 86_400_000));
+}
+
+function getTodayAt(time: string) {
+  const [hourValue, minuteValue = "0"] = time.split(":");
+  const date = new Date();
+  date.setHours(Number(hourValue) || 9, Number(minuteValue) || 0, 0, 0);
+  return date;
+}
+
 export default function PlannerPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [coach, setCoach] = useState<CoachSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [syncingMission, setSyncingMission] = useState(false);
+  const [plannerMessage, setPlannerMessage] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [currentTime, setCurrentTime] = useState(0);
+  const [reminders, setReminders] = useState<ReminderSettings>({
+    enabled: false,
+    leadMinutes: 30,
+  });
 
   const [form, setForm] = useState({
     title: "",
@@ -61,17 +193,182 @@ export default function PlannerPage() {
     deadline: "",
   });
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     const res = await fetch(`/api/tasks?filter=${filter === "all" ? "" : filter}`);
     const data = await res.json();
     setTasks(Array.isArray(data) ? data : []);
     setLoading(false);
-  };
+  }, [filter]);
+
+  const fetchCoach = useCallback(async () => {
+    try {
+      const response = await fetch("/api/coach");
+      const data = await response.json();
+      if (response.ok) setCoach(data);
+    } catch {
+      setCoach(null);
+    }
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    fetchTasks();
-  }, [filter]);
+    const timer = window.setTimeout(() => {
+      fetchTasks();
+      fetchCoach();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchCoach, fetchTasks]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = window.setTimeout(() => {
+      const stored = window.localStorage.getItem(reminderStorageKey);
+      if (stored) {
+        try {
+          setReminders(JSON.parse(stored));
+        } catch {
+          window.localStorage.removeItem(reminderStorageKey);
+        }
+      }
+      if ("Notification" in window) {
+        setNotificationPermission(Notification.permission);
+      }
+      setCurrentTime(Date.now());
+    }, 0);
+
+    const interval = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(reminderStorageKey, JSON.stringify(reminders));
+  }, [reminders]);
+
+  const activeTasks = tasks.filter((task) => !task.completed);
+
+  const reminderItems = useMemo(() => {
+    const now = currentTime || 0;
+    return activeTasks
+      .map((task) => {
+        const due = getTaskDueDate(task.deadline);
+        if (!due) return null;
+        const reminderAt = new Date(due.getTime() - reminders.leadMinutes * 60_000);
+        const status =
+          due.getTime() < now
+            ? "overdue"
+            : reminderAt.getTime() <= now
+              ? "ready"
+              : "upcoming";
+        return { task, due, reminderAt, status };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a!.due.getTime() - b!.due.getTime()) as Array<{
+        task: Task;
+        due: Date;
+        reminderAt: Date;
+        status: "overdue" | "ready" | "upcoming";
+      }>;
+  }, [activeTasks, currentTime, reminders.leadMinutes]);
+
+  useEffect(() => {
+    if (!reminders.enabled || notificationPermission !== "granted" || typeof window === "undefined") return;
+
+    const notified = new Set<string>();
+    const timers = reminderItems
+      .filter((item) => item.status !== "overdue")
+      .map((item) => {
+        const delay = Math.max(0, item.reminderAt.getTime() - Date.now());
+        return window.setTimeout(() => {
+          if (notified.has(item.task.id) || item.task.completed) return;
+          notified.add(item.task.id);
+          new Notification("Zentric Planner Reminder", {
+            body: `${item.task.title} is due ${formatDate(item.task.deadline || item.due.toISOString())}.`,
+          });
+        }, Math.min(delay, 2_147_483_647));
+      });
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [reminderItems, reminders.enabled, notificationPermission]);
+
+  const dailyPlan = useMemo(() => coach?.dailyPlan ?? [], [coach?.dailyPlan]);
+  const revisionQueue = coach?.revisionQueue ?? [];
+  const revisionDueCount = revisionQueue.filter((item) => item.due).length;
+  const completedToday = coach?.dayRecap.completedTopics ?? 0;
+  const remainingRoadmapItems = dailyPlan.filter((item) => !item.mastered).length;
+  const completedLearningSteps = dailyPlan.reduce((sum, item) => sum + (item.completedSteps?.length ?? 0), 0);
+  const totalLearningSteps = dailyPlan.length * learningStepLabels.length;
+  const todayPlanTotal = completedToday + remainingRoadmapItems || dailyPlan.length;
+  const todayCompletion =
+    totalLearningSteps > 0
+      ? Math.min(100, Math.round((completedLearningSteps / totalLearningSteps) * 100))
+      : todayPlanTotal > 0
+        ? Math.min(100, Math.round((completedToday / todayPlanTotal) * 100))
+        : 0;
+  const focusTopic = dailyPlan.find((item) => !item.mastered)?.title ?? dailyPlan[0]?.title ?? coach?.memory.weakTopics ?? "Set your goal";
+  const nextPhase = dailyPlan.find((item) => !item.mastered)?.phase ?? dailyPlan[0]?.phase ?? "Roadmap";
+  const plannedMinutes = dailyPlan.reduce((sum, item) => {
+    const minutes = Number(item.duration.match(/\d+/)?.[0] ?? 0);
+    return sum + minutes;
+  }, 0);
+  const plannedTimeLabel =
+    plannedMinutes > 0
+      ? plannedMinutes >= 60
+        ? `${Math.round((plannedMinutes / 60) * 10) / 10} hours`
+        : `${plannedMinutes} minutes`
+      : coach?.memory.dailyStudyTime ?? "Set in AI Coach";
+  const deadlineLabel = coach?.memory.targetDeadline
+    ? new Date(coach.memory.targetDeadline).toLocaleDateString()
+    : "No deadline";
+  const deadlineDaysLeft = getDeadlineDaysLeft(coach?.memory.targetDeadline);
+  const deadlineDaysLabel = deadlineDaysLeft === null ? "No deadline" : `${deadlineDaysLeft} days left`;
+  const dayNumber = coach?.dailyPlan[0]?.day ?? coach?.dayRecap.day ?? 1;
+  const missionMarkerPrefix = `[ZENTRIC_DAILY_MISSION:${dayNumber}:`;
+  const revisionMarkerPrefix = `[ZENTRIC_REVISION:${dayNumber}:`;
+  const syncedMissionTasks = tasks.filter((task) => task.description?.includes(missionMarkerPrefix));
+  const syncedRevisionTasks = tasks.filter((task) => task.description?.includes(revisionMarkerPrefix));
+  const syncedMissionIds = new Set(
+    syncedMissionTasks
+      .map((task) => task.description?.match(/\[ZENTRIC_DAILY_MISSION:\d+:([^\]]+)\]/)?.[1])
+      .filter(Boolean) as string[],
+  );
+  const missionReminderItems = useMemo(() => {
+    const now = currentTime || 0;
+    return dailyPlan.map((item) => {
+      const due = getTodayAt(item.time);
+      const reminderAt = new Date(due.getTime() - reminders.leadMinutes * 60_000);
+      const status =
+        due.getTime() < now
+          ? "overdue"
+          : reminderAt.getTime() <= now
+            ? "ready"
+            : "upcoming";
+      return { item, due, reminderAt, status };
+    });
+  }, [currentTime, dailyPlan, reminders.leadMinutes]);
+
+  useEffect(() => {
+    if (!reminders.enabled || notificationPermission !== "granted" || typeof window === "undefined") return;
+
+    const notified = new Set<string>();
+    const timers = missionReminderItems
+      .filter((item) => item.status !== "overdue")
+      .map((item) => {
+        const delay = Math.max(0, item.reminderAt.getTime() - Date.now());
+        return window.setTimeout(() => {
+          if (notified.has(item.item.id)) return;
+          notified.add(item.item.id);
+          new Notification("Zentric Mission Reminder", {
+            body: `${item.item.title} starts at ${item.item.time} for ${coach?.memory.careerGoal ?? "today's mission"}.`,
+          });
+        }, Math.min(delay, 2_147_483_647));
+      });
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [coach?.memory.careerGoal, missionReminderItems, notificationPermission, reminders.enabled]);
 
   const handleAdd = async () => {
     if (!form.title.trim()) return;
@@ -85,6 +382,124 @@ export default function PlannerPage() {
     setShowAddDialog(false);
     setSubmitting(false);
     fetchTasks();
+  };
+
+  const createRoadmapTask = async (title: string, priority: string) => {
+    setPlannerMessage("");
+    await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        description: `AI Coach roadmap task for ${coach?.memory.careerGoal || "your target role"}.`,
+        priority,
+        deadline: new Date().toISOString().slice(0, 10),
+      }),
+    });
+    setPlannerMessage("Roadmap task added to Planner.");
+    fetchTasks();
+  };
+
+  const syncDailyMissionToTasks = async () => {
+    if (!coach || dailyPlan.length === 0) {
+      setPlannerMessage("Set your AI Coach goal first so Zentric can generate today's mission.");
+      return;
+    }
+
+    setSyncingMission(true);
+    setPlannerMessage("");
+
+    try {
+      const allTasksResponse = await fetch("/api/tasks?filter=");
+      const allTasks = await allTasksResponse.json();
+      const existingTasks: Task[] = Array.isArray(allTasks) ? allTasks : tasks;
+      const existingDescriptions = new Set(existingTasks.map((task) => task.description || ""));
+      const today = new Date().toISOString().slice(0, 10);
+      const created: string[] = [];
+
+      for (const item of dailyPlan) {
+        const marker = `[ZENTRIC_DAILY_MISSION:${item.day}:${item.id}]`;
+        if ([...existingDescriptions].some((description) => description.includes(marker))) continue;
+
+        const description = [
+          marker,
+          `AI Coach daily mission for ${coach.memory.careerGoal}.`,
+          `Phase: ${item.phase}`,
+          `Time: ${item.time}`,
+          `Duration: ${item.duration}`,
+          `Roadmap topic: ${item.title}`,
+        ].join("\n");
+
+        await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `${item.time} · ${item.title}`,
+            description,
+            priority: item.priority.toLowerCase(),
+            deadline: today,
+          }),
+        });
+        existingDescriptions.add(description);
+        created.push(item.title);
+      }
+
+      for (const item of revisionQueue.filter((revision) => revision.due).slice(0, 3)) {
+        const marker = `[ZENTRIC_REVISION:${dayNumber}:${item.topicId}]`;
+        if ([...existingDescriptions].some((description) => description.includes(marker))) continue;
+
+        const description = [
+          marker,
+          `AI Coach spaced revision for ${coach.memory.careerGoal}.`,
+          `Phase: ${item.phase}`,
+          item.reason,
+        ].join("\n");
+
+        await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `Revision · ${item.topicTitle}`,
+            description,
+            priority: "high",
+            deadline: today,
+          }),
+        });
+        existingDescriptions.add(description);
+        created.push(`Revision: ${item.topicTitle}`);
+      }
+
+      await fetchTasks();
+      await fetchCoach();
+      setPlannerMessage(
+        created.length
+          ? `${created.length} AI mission task${created.length === 1 ? "" : "s"} added to Planner.`
+          : "Today's AI mission is already synced to Planner tasks.",
+      );
+    } finally {
+      setSyncingMission(false);
+    }
+  };
+
+  const visitDailyTopic = async (topic: NonNullable<CoachSnapshot["dailyPlan"]>[number], url: string) => {
+    setPlannerMessage("");
+    const response = await fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "visit_roadmap_topic",
+        topicId: topic.id,
+        topicTitle: topic.title,
+        phase: topic.phase,
+        day: topic.day,
+      }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setCoach(data);
+      setPlannerMessage(`${topic.title} marked complete for Day ${topic.day}.`);
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleEdit = async () => {
@@ -101,12 +516,58 @@ export default function PlannerPage() {
   };
 
   const toggleComplete = async (task: Task) => {
+    const completing = !task.completed;
     await fetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed: !task.completed }),
+      body: JSON.stringify({ completed: completing }),
     });
+
+    if (completing) {
+      const missionMatch = task.description?.match(/\[ZENTRIC_DAILY_MISSION:(\d+):([^\]]+)\]/);
+      const revisionMatch = task.description?.match(/\[ZENTRIC_REVISION:(\d+):([^\]]+)\]/);
+      const topicId = missionMatch?.[2] || revisionMatch?.[2];
+      const planItem = topicId ? dailyPlan.find((item) => item.id === topicId) : null;
+      const revisionItem = topicId ? revisionQueue.find((item) => item.topicId === topicId) : null;
+
+      if (topicId && (planItem || revisionItem)) {
+        const topicTitle = planItem?.title ?? revisionItem?.topicTitle ?? task.title;
+        const phase = planItem?.phase ?? revisionItem?.phase ?? "Planner";
+        const day = Number(missionMatch?.[1] || revisionMatch?.[1] || dayNumber);
+
+        await fetch("/api/coach", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "visit_roadmap_topic",
+            topicId,
+            topicTitle,
+            phase,
+            day,
+            reflection: `Completed from Planner task: ${task.title}`,
+          }),
+        });
+
+        await fetch("/api/coach", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "complete_learning_step",
+            topicId,
+            topicTitle,
+            phase,
+            day,
+            stepId: "goal",
+            stepTitle: "Planner Mission",
+            evidence: `Completed synced Planner task: ${task.title}`,
+            quality: "planner-completed",
+          }),
+        });
+      }
+    }
+
     fetchTasks();
+    fetchCoach();
   };
 
   const deleteTask = async (id: string) => {
@@ -115,7 +576,7 @@ export default function PlannerPage() {
   };
 
   const openEdit = (task: Task) => {
-    const deadlineDate: string = (task.deadline && typeof task.deadline === "string" ? task.deadline.split("T")[0] : "") || "";
+    const deadlineDate = (task.deadline && typeof task.deadline === "string" ? task.deadline.split("T")[0] : "") || "";
     setForm({
       title: task.title,
       description: task.description || "",
@@ -130,107 +591,453 @@ export default function PlannerPage() {
     setShowAddDialog(true);
   };
 
-  const filteredTasks = tasks;
-  const stats = {
-    total: tasks.length,
-    completed: tasks.filter((t) => t.completed).length,
-    pending: tasks.filter((t) => !t.completed).length,
+  const enableReminders = async () => {
+    setPlannerMessage("");
+    if (!("Notification" in window)) {
+      setPlannerMessage("This browser does not support notifications. In-app reminders will still work.");
+      setReminders((current) => ({ ...current, enabled: true }));
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === "granted") {
+      setReminders((current) => ({ ...current, enabled: true }));
+      setPlannerMessage("Planner reminders enabled. Zentric will notify you only for tasks with deadlines.");
+    } else {
+      setReminders((current) => ({ ...current, enabled: false }));
+      setPlannerMessage("Notifications were not enabled. You can still use the in-app reminder center.");
+    }
+  };
+
+  const disableReminders = () => {
+    setReminders((current) => ({ ...current, enabled: false }));
+    setPlannerMessage("Planner notifications turned off.");
   };
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Task Planner</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {stats.pending} pending · {stats.completed} completed
-          </p>
+    <main className="mx-auto max-w-7xl p-5 lg:p-8">
+      <section className="mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-purple-500/15 via-blue-500/10 to-white/[0.02] p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <Badge className="mb-4 border-purple-400/30 bg-purple-500/10 text-purple-100">
+              <BrainCircuit className="mr-1 h-3 w-3" />
+              AI Execution Planner
+            </Badge>
+            <h1 className="text-3xl font-bold text-white">Planner</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+              Turn your AI Coach roadmap into focused tasks, optional reminders, and daily execution.
+              The routine adapts to your selected goal, deadline, weak topics, and available study time.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:min-w-[520px]">
+            <MetricCard label="Mission Progress" value={`${todayCompletion}%`} tone="emerald" />
+            <MetricCard label="Study Time" value={plannedTimeLabel} tone="purple" />
+            <MetricCard label="Revision Due" value={String(revisionDueCount)} tone="yellow" />
+            <MetricCard label="Deadline" value={deadlineDaysLabel} tone="blue" />
+          </div>
+        </div>
+      </section>
+
+      {plannerMessage && (
+        <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          {plannerMessage}
+        </div>
+      )}
+
+      <section className="mb-6 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card className="border-blue-400/20 bg-blue-500/[0.04]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-blue-300" />
+              Today&apos;s AI Mission
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div>
+              <p className="text-xl font-bold text-white">
+                {coach ? `Day ${dayNumber}: ${coach.dailyMission?.mission ?? `${coach.memory.careerGoal} at ${coach.memory.dreamCompany}`}` : "Set your AI Coach memory to generate a roadmap routine."}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-gray-400">
+                {coach ? coach.dailyMission?.why ?? "Planner uses your goal, deadline, daily study minutes, weak topics, and visited roadmap topics to decide what to do today." : "Planner will use your target role, weak topics, deadline, and progress to decide what matters today."}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniStat icon={Clock3} label="Planned Time" value={plannedTimeLabel} />
+              <MiniStat icon={Sparkles} label="Readiness" value={coach?.dailyMission?.readiness ?? `${coach?.metrics.growthScore ?? 0}% growth`} />
+              <MiniStat icon={Repeat2} label="Revision Due" value={`${revisionDueCount} topics`} />
+              <MiniStat icon={Flag} label="Weak Focus" value={coach?.memory.weakTopics ?? "Not set"} />
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">Planner sync status</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                    {syncedMissionTasks.length}/{dailyPlan.length} roadmap tasks synced
+                    {syncedRevisionTasks.length ? ` · ${syncedRevisionTasks.length} revision tasks synced` : ""}.
+                    Completing a synced task updates AI Coach and today&apos;s progress.
+                  </p>
+                </div>
+                <Button
+                  onClick={syncDailyMissionToTasks}
+                  disabled={syncingMission || dailyPlan.length === 0}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                >
+                  {syncingMission ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Sync Today&apos;s Mission
+                </Button>
+              </div>
+            </div>
+            {coach?.dailyMission?.tasks?.length ? (
+              <div className="rounded-2xl border border-purple-400/20 bg-purple-400/10 p-4">
+                <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-purple-100">
+                  <BookOpen className="h-4 w-4" />
+                  Mission Checklist
+                </p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {coach.dailyMission.tasks.map((task) => (
+                    <div key={task} className="flex gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-gray-200">
+                      <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-300" />
+                      {task}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <div className="space-y-3">
+              {(coach?.dailyPlan ?? []).length === 0 ? (
+                <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-gray-500">
+                  Open AI Coach and save your accuracy setup to generate a personalized execution plan.
+                </p>
+              ) : (coach?.dailyPlan ?? []).map((item) => (
+                <div key={item.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="border-blue-400/30 bg-blue-400/10 text-blue-100">Day {item.day}</Badge>
+                        <Badge className={item.mastered ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-yellow-400/30 bg-yellow-400/10 text-yellow-100"}>
+                          {item.mastered ? "completed" : "visit to complete"}
+                        </Badge>
+                        {syncedMissionIds.has(item.id) && (
+                          <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+                            synced to tasks
+                          </Badge>
+                        )}
+                        <span className="text-xs text-gray-500">{item.time} · {item.duration} · {item.priority}</span>
+                      </div>
+                      <p className="mt-2 font-medium text-white">{item.title}</p>
+                      <p className="mt-1 text-xs text-gray-500">{item.phase} · {item.recapPrompt}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                        <Link href={`/learning-mode?topic=${item.id}`}>
+                          <GraduationCap className="h-4 w-4" />
+                          Start Session
+                        </Link>
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => createRoadmapTask(item.title, item.priority.toLowerCase())} className="border-purple-400/30 text-purple-100">
+                        <Plus className="h-4 w-4" />
+                        Add Task
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Learning session progress</p>
+                      <span className="text-xs text-blue-200">
+                        {item.completedSteps?.length ?? 0}/{learningStepLabels.length} steps
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {learningStepLabels.map((step) => {
+                        const done = item.completedSteps?.includes(step.id);
+                        return (
+                          <span
+                            key={step.id}
+                            className={done ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200" : "rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-gray-400"}
+                          >
+                            {done ? "✓ " : ""}
+                            {step.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr]">
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Resources</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" className="border-red-400/30 text-red-200" onClick={() => visitDailyTopic(item, item.videoUrl)}>
+                          Video
+                        </Button>
+                        <Button size="sm" variant="outline" className="border-blue-400/30 text-blue-200" onClick={() => visitDailyTopic(item, item.resourceUrl)}>
+                          Notes
+                        </Button>
+                        <Button size="sm" variant="outline" className="border-emerald-400/30 text-emerald-200" onClick={() => visitDailyTopic(item, item.codingUrl)}>
+                          Questions
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Practice Questions</p>
+                      <ul className="space-y-1 text-xs leading-5 text-gray-400">
+                        {item.questions.map((question) => (
+                          <li key={question}>• {question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {coach?.dayRecap && (
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-100">
+                <span className="font-semibold">Day {coach.dayRecap.day} recap:</span> {coach.dayRecap.summary}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                <Link href={`/learning-mode${dailyPlan[0]?.id ? `?topic=${dailyPlan[0].id}` : ""}`}>
+                  <GraduationCap className="h-4 w-4" />
+                  Start Today&apos;s Mission
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="border-purple-400/30 text-purple-100">
+                <Link href="/ai-coach">Tune AI Coach Accuracy</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-5">
+        <Card className="border-emerald-400/20 bg-emerald-500/[0.03]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Repeat2 className="h-5 w-5 text-emerald-300" />
+              Revision Due Today
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {revisionQueue.length === 0 ? (
+              <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-500">
+                Complete a Learning Mode session and Zentric will schedule spaced revision here.
+              </p>
+            ) : revisionQueue.slice(0, 4).map((item) => (
+              <div key={item.topicId} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-white">{item.topicTitle}</p>
+                    <p className="text-xs text-gray-500">{item.phase}</p>
+                  </div>
+                  <Badge className={item.due ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-100" : "border-blue-400/30 bg-blue-400/10 text-blue-100"}>
+                    {item.due ? "Due" : "Queued"}
+                  </Badge>
+                </div>
+                <p className="text-sm leading-6 text-gray-400">{item.reason}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {item.actions.map((action) => (
+                    <span key={action} className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-gray-300">
+                      {action}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-400/20 bg-purple-500/[0.04]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {reminders.enabled ? <Bell className="h-5 w-5 text-purple-300" /> : <BellOff className="h-5 w-5 text-gray-500" />}
+              Reminders & Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <p className="text-sm leading-6 text-gray-400">
+              Reminders are optional. Zentric will only ask for browser notification permission if you enable them.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Status</p>
+                <p className={reminders.enabled ? "mt-2 font-semibold text-emerald-200" : "mt-2 font-semibold text-gray-300"}>
+                  {reminders.enabled ? "Enabled" : "Disabled until you turn it on"}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {reminders.enabled
+                    ? `Browser permission: ${"Notification" in globalThis ? notificationPermission : "unsupported"}`
+                    : "Browser permission is not requested while reminders are off."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Reminder Time</p>
+                <Select
+                  value={String(reminders.leadMinutes)}
+                  onValueChange={(value) => setReminders((current) => ({ ...current, leadMinutes: Number(value) }))}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">At deadline day</SelectItem>
+                    <SelectItem value="10">10 minutes before</SelectItem>
+                    <SelectItem value="30">30 minutes before</SelectItem>
+                    <SelectItem value="60">1 hour before</SelectItem>
+                    <SelectItem value="1440">1 day before</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {reminders.enabled ? (
+                <Button variant="outline" className="border-red-400/30 text-red-200" onClick={disableReminders}>
+                  <BellOff className="h-4 w-4" />
+                  Turn Off Reminders
+                </Button>
+              ) : (
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white" onClick={enableReminders}>
+                  <Bell className="h-4 w-4" />
+                  Enable Reminders
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">AI mission reminders</p>
+              {missionReminderItems.length === 0 ? (
+                <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-500">
+                  AI Coach will generate timed mission reminders after your daily plan is ready.
+                </p>
+              ) : missionReminderItems.slice(0, 4).map((item) => (
+                <div key={item.item.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-white">{item.item.title}</p>
+                    <Badge className={item.status === "overdue" ? "border-red-400/30 bg-red-400/10 text-red-200" : item.status === "ready" ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-100" : "border-blue-400/30 bg-blue-400/10 text-blue-100"}>
+                      {item.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Starts {item.item.time}; reminder {item.reminderAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Manual task reminders</p>
+              {reminderItems.slice(0, 5).length === 0 ? (
+                <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-500">
+                  Add deadlines to tasks to see reminders here.
+                </p>
+              ) : reminderItems.slice(0, 5).map((item) => (
+                <div key={item.task.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-white">{item.task.title}</p>
+                    <Badge className={item.status === "overdue" ? "border-red-400/30 bg-red-400/10 text-red-200" : item.status === "ready" ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-100" : "border-blue-400/30 bg-blue-400/10 text-blue-100"}>
+                      {item.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">{getRelativeReminderLabel(item.task, reminders.leadMinutes)}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        </div>
+      </section>
+
+      <section className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          { label: "Today's Plan", value: `${dailyPlan.length} topics`, detail: `Day ${dayNumber}`, color: "text-blue-200" },
+          { label: "Learning Steps", value: `${completedLearningSteps}/${totalLearningSteps || 0}`, detail: `${todayCompletion}% done`, color: "text-emerald-300" },
+          { label: "Focus Topic", value: focusTopic, detail: nextPhase, color: "text-purple-200" },
+          { label: "Deadline Pressure", value: deadlineDaysLabel, detail: deadlineLabel, color: "text-yellow-200" },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-white/8 bg-white/3 p-4">
+            <div className="text-xs uppercase tracking-[0.16em] text-gray-500">{s.label}</div>
+            <div className={`mt-2 line-clamp-2 text-lg font-bold ${s.color}`}>{s.value}</div>
+            <div className="mt-1 text-xs text-gray-500">{s.detail}</div>
+          </div>
+        ))}
+      </section>
+
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-500" />
+          {["all", "active", "completed"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+                filter === f
+                  ? "border border-purple-500/30 bg-purple-500/20 text-purple-400"
+                  : "text-gray-500 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
         </div>
         <Button
           onClick={openAdd}
           className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="h-4 w-4" />
           New Task
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: "Total", value: stats.total, color: "text-white" },
-          { label: "Pending", value: stats.pending, color: "text-yellow-400" },
-          { label: "Completed", value: stats.completed, color: "text-green-400" },
-        ].map((s) => (
-          <div key={s.label} className="p-4 rounded-xl bg-white/3 border border-white/8 text-center">
-            <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-xs text-gray-500">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-6">
-        <Filter className="w-4 h-4 text-gray-500" />
-        {["all", "active", "completed"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${
-              filter === f
-                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                : "text-gray-500 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {/* Task List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+          <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
         </div>
-      ) : filteredTasks.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <CheckCircle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400 mb-2">No tasks found</p>
-            <Button variant="ghost" className="text-purple-400" onClick={openAdd}>
-              Create your first task
+      ) : tasks.length === 0 ? (
+        <EmptyState
+          icon={Calendar}
+          title={coach ? "Sync your AI mission into Planner." : "Start from AI Coach to generate your plan."}
+          description={
+            coach
+              ? "Your goal-based roadmap is ready. Sync today's mission to create real tasks, deadlines, revision, and learning sessions."
+              : "Planner becomes useful after AI Coach knows your goal, stage, deadline, and weak topics. Set that once, then Zentric plans your day."
+          }
+          action={
+            <Button
+              onClick={coach && dailyPlan.length ? syncDailyMissionToTasks : openAdd}
+              disabled={syncingMission}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+            >
+              {syncingMission ? <Loader2 className="h-4 w-4 animate-spin" /> : coach && dailyPlan.length ? <Sparkles className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {coach && dailyPlan.length ? "Sync Today's Mission" : "Create first task"}
             </Button>
-          </CardContent>
-        </Card>
+          }
+          secondary={
+            <Button asChild variant="outline" className="border-blue-400/30 text-blue-100">
+              <Link href="/ai-coach">
+                <Sparkles className="h-4 w-4" />
+                Generate from AI Coach
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
-          {filteredTasks.map((task) => (
+          {tasks.map((task) => (
             <div
               key={task.id}
-              className={`group flex items-start gap-3 p-4 rounded-xl border transition-all ${
+              className={`group flex items-start gap-3 rounded-xl border p-4 transition-all ${
                 task.completed
                   ? "bg-white/2 border-white/5 opacity-60"
                   : "bg-white/3 border-white/8 hover:border-white/15"
               }`}
             >
-              <button
-                onClick={() => toggleComplete(task)}
-                className="mt-0.5 flex-shrink-0"
-              >
+              <button onClick={() => toggleComplete(task)} className="mt-0.5 flex-shrink-0">
                 {task.completed ? (
-                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <CheckCircle className="h-5 w-5 text-green-400" />
                 ) : (
-                  <Circle className="w-5 h-5 text-gray-500 hover:text-purple-400 transition-colors" />
+                  <Circle className="h-5 w-5 text-gray-500 transition-colors hover:text-purple-400" />
                 )}
               </button>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-sm font-medium ${
-                      task.completed ? "line-through text-gray-500" : "text-white"
-                    }`}
-                  >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`text-sm font-medium ${task.completed ? "line-through text-gray-500" : "text-white"}`}>
                     {task.title}
                   </span>
                   <Badge
@@ -238,40 +1045,46 @@ export default function PlannerPage() {
                       task.priority === "high"
                         ? "destructive"
                         : task.priority === "medium"
-                        ? "warning"
-                        : "success"
+                          ? "warning"
+                          : "success"
                     }
                   >
-                    <Flag className="w-2.5 h-2.5 mr-1" />
+                    <Flag className="mr-1 h-2.5 w-2.5" />
                     {task.priority}
                   </Badge>
                   {task.deadline && (
-                    <span className="text-xs text-orange-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                    <span className="flex items-center gap-1 text-xs text-orange-400">
+                      <Calendar className="h-3 w-3" />
                       {formatDate(task.deadline)}
+                    </span>
+                  )}
+                  {task.deadline && !task.completed && (
+                    <span className="flex items-center gap-1 text-xs text-blue-300">
+                      <Bell className="h-3 w-3" />
+                      {reminders.enabled ? getRelativeReminderLabel(task, reminders.leadMinutes) : "Reminder optional"}
                     </span>
                   )}
                 </div>
                 {task.description && (
-                  <p className="text-xs text-gray-500 mt-1 truncate">{task.description}</p>
+                  <p className="mt-1 truncate text-xs text-gray-500">{task.description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-7 h-7 text-gray-500 hover:text-white"
+                  className="h-7 w-7 text-gray-500 hover:text-white"
                   onClick={() => openEdit(task)}
                 >
-                  <Pencil className="w-3.5 h-3.5" />
+                  <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-7 h-7 text-gray-500 hover:text-red-400"
+                  className="h-7 w-7 text-gray-500 hover:text-red-400"
                   onClick={() => deleteTask(task.id)}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -279,138 +1092,143 @@ export default function PlannerPage() {
         </div>
       )}
 
-      {/* Add Task Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Task</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Title *</Label>
-              <Input
-                placeholder="Task title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                placeholder="Optional description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select
-                  value={form.priority}
-                  onValueChange={(v) => setForm({ ...form, priority: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">🟢 Low</SelectItem>
-                    <SelectItem value="medium">🟡 Medium</SelectItem>
-                    <SelectItem value="high">🔴 High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Deadline</Label>
-                <Input
-                  type="date"
-                  value={form.deadline}
-                  onChange={(e) => setForm({ ...form, deadline: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowAddDialog(false)}>
-              <X className="w-4 h-4 mr-2" />Cancel
-            </Button>
-            <Button
-              onClick={handleAdd}
-              disabled={submitting || !form.title.trim()}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 border-0"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-2" />Create Task</>}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TaskDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        title="Create New Task"
+        form={form}
+        setForm={setForm}
+        submitting={submitting}
+        onSubmit={handleAdd}
+        submitLabel="Create Task"
+      />
 
-      {/* Edit Task Dialog */}
-      <Dialog open={!!editingTask} onOpenChange={(o) => !o && setEditingTask(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Title *</Label>
-              <Input
-                placeholder="Task title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                placeholder="Optional description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select
-                  value={form.priority}
-                  onValueChange={(v) => setForm({ ...form, priority: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">🟢 Low</SelectItem>
-                    <SelectItem value="medium">🟡 Medium</SelectItem>
-                    <SelectItem value="high">🔴 High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Deadline</Label>
-                <Input
-                  type="date"
-                  value={form.deadline}
-                  onChange={(e) => setForm({ ...form, deadline: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditingTask(null)}>
-              <X className="w-4 h-4 mr-2" />Cancel
-            </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={submitting || !form.title.trim()}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 border-0"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-2" />Save Changes</>}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TaskDialog
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+        title="Edit Task"
+        form={form}
+        setForm={setForm}
+        submitting={submitting}
+        onSubmit={handleEdit}
+        submitLabel="Save Changes"
+      />
+    </main>
+  );
+}
+
+function MetricCard({ label, value, tone }: { label: string; value: string; tone: "emerald" | "purple" | "yellow" | "blue" }) {
+  const colorClass =
+    tone === "emerald"
+      ? "text-emerald-100"
+      : tone === "purple"
+        ? "text-purple-100"
+        : tone === "yellow"
+          ? "text-yellow-100"
+          : "text-blue-100";
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{label}</p>
+      <p className={`mt-2 text-2xl font-bold ${colorClass}`}>{value}</p>
     </div>
   );
 }
+
+function MiniStat({ icon: Icon, label, value }: { icon: typeof Clock3; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <Icon className="mb-3 h-4 w-4 text-blue-300" />
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="mt-1 line-clamp-2 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function TaskDialog({
+  open,
+  onOpenChange,
+  title,
+  form,
+  setForm,
+  submitting,
+  onSubmit,
+  submitLabel,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  form: { title: string; description: string; priority: string; deadline: string };
+  setForm: (form: { title: string; description: string; priority: string; deadline: string }) => void;
+  submitting: boolean;
+  onSubmit: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Title *</Label>
+            <Input
+              placeholder="Task title"
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              onKeyDown={(event) => event.key === "Enter" && onSubmit()}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              placeholder="Optional description"
+              value={form.description}
+              onChange={(event) => setForm({ ...form, description: event.target.value })}
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={form.priority} onValueChange={(value) => setForm({ ...form, priority: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Deadline</Label>
+              <Input
+                type="date"
+                value={form.deadline}
+                onChange={(event) => setForm({ ...form, deadline: event.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            <X className="h-4 w-4" />
+            Cancel
+          </Button>
+          <Button
+            onClick={onSubmit}
+            disabled={submitting || !form.title.trim()}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 border-0"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {submitLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -224,7 +224,7 @@ const growthPlan: GrowthPlanItem[] = [
   },
   {
     time: "10:00",
-    title: "Solve Medium Graph Question",
+    title: "Practice Your Weakest Topic",
     duration: "60 min",
     priority: "Critical",
     impact: "+1.1%",
@@ -482,8 +482,24 @@ export default function DashboardPage() {
     [growth?.secondBrainSummary, loading, noteCount]
   );
 
+  const recommendations = growth?.recommendations ?? [
+    "Add study topics",
+    "Connect LeetCode",
+    "Create project notes",
+    "Track resume tasks",
+  ];
+  const missionProgress = growth?.missionProgress ?? {
+    mission: growth?.currentMission ?? "Set your dream mission in AI Coach",
+    overallProgress: 0,
+    breakdown: missionBreakdown,
+  };
+  const companyReadinessItems = growth?.companyReadiness ?? companyReadiness;
+  const currentMission = growth?.currentMission ?? missionProgress.mission;
+  const readinessTargetLabel = companyReadinessItems[0]?.company
+    ? `${companyReadinessItems[0].company} readiness`
+    : "Mission readiness";
   const heroStats = [
-    { label: "Current Mission", value: growth?.currentMission ?? "Become Software Engineer at Google" },
+    { label: "Current Mission", value: currentMission },
     { label: "Growth Score", value: `${growth?.growthScore ?? 0}%` },
     { label: "Current Readiness", value: growth?.currentReadiness ?? "Calculating" },
     {
@@ -495,19 +511,6 @@ export default function DashboardPage() {
       value: `${growth?.estimatedStudyHoursToday ?? 0} hrs`,
     },
   ];
-
-  const recommendations = growth?.recommendations ?? [
-    "Add study topics",
-    "Connect LeetCode",
-    "Create project notes",
-    "Track resume tasks",
-  ];
-  const missionProgress = growth?.missionProgress ?? {
-    mission: "Become Software Engineer at Google",
-    overallProgress: 0,
-    breakdown: missionBreakdown,
-  };
-  const companyReadinessItems = growth?.companyReadiness ?? companyReadiness;
   const growthPlanItems = growth?.growthPlan ?? growthPlan;
   const coachSignalItems = growth?.coachSignals ?? coachSignals;
   const retentionItems = growth?.knowledgeRetention ?? retentionStats;
@@ -524,6 +527,43 @@ export default function DashboardPage() {
     growth?.motivation ??
     "Keep going. Every real task, note, study topic and coding session will sharpen this score.";
   const recentAchievementItems = growth?.recentAchievements ?? recentAchievements;
+  const sortedBreakdown = [...missionProgress.breakdown].sort((a, b) => a.value - b.value);
+  const weakestSignal = sortedBreakdown[0] ?? missionProgress.breakdown[0];
+  const strongestSignal = [...missionProgress.breakdown].sort((a, b) => b.value - a.value)[0] ?? missionProgress.breakdown[0];
+  const primaryAction = growthPlanItems[0] ?? {
+    time: "Now",
+    title: "Start your first learning mission",
+    duration: "45 min",
+    priority: "High",
+    impact: "+1%",
+    href: "/ai-coach",
+  };
+  const nextPlanItems = growthPlanItems.slice(0, 4);
+  const visibleCoachSignals = coachSignalItems.slice(0, 3);
+  const topCompanies = companyReadinessItems.slice(0, 3);
+  const systemSignalCards = [
+    {
+      title: "Learning + Memory",
+      value: retentionItems.find((item) => item.label === "Retention Score")?.value ?? "0%",
+      detail: `${learningAnalyticsItems.find((item) => item.label === "Topics Mastered")?.value ?? "0"} mastered · ${secondBrainSummary.find((item) => item.label === "Notes Created")?.value ?? "0"} notes`,
+      href: "/learning-mode",
+      icon: Brain,
+    },
+    {
+      title: "Coding + Practice",
+      value: `${missionProgress.breakdown.find((item) => item.label === "Coding")?.value ?? 0}%`,
+      detail: leetcodeInsightItems.find((item) => item.label === "Problems Solved")?.value ?? "Practice inside Coding Hub",
+      href: "/coding-hub",
+      icon: Code2,
+    },
+    {
+      title: "Career Readiness",
+      value: `${careerProgressItems.find((item) => item.label === "Interview Readiness")?.value ?? 0}%`,
+      detail: `${careerProgressItems.find((item) => item.label === "Resume Score")?.value ?? 0}% resume · ${careerProgressItems.find((item) => item.label === "ATS Score")?.value ?? 0}% ATS`,
+      href: "/career",
+      icon: Briefcase,
+    },
+  ];
   const learningIconMap: Record<string, React.ElementType> = {
     "Topics Mastered": Trophy,
     "Topics In Progress": Activity,
@@ -604,13 +644,13 @@ export default function DashboardPage() {
                   size="lg"
                   className="h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 text-white shadow-lg shadow-purple-600/25 transition-transform hover:scale-[1.02]"
                 >
-                  <Link href="/coding-hub">
+                  <Link href={primaryAction.href}>
                     Start Today&apos;s Mission
                     <Rocket className="h-4 w-4" />
                   </Link>
                 </Button>
                 <p className="text-sm text-blue-100/80">
-                  Completing today&apos;s plan increases your Google readiness
+                  Completing today&apos;s plan increases your mission readiness
                   by{" "}
                   <span className="font-semibold text-white">
                     {growth?.readinessIncrease ?? 0}%
@@ -627,7 +667,7 @@ export default function DashboardPage() {
                     Next best action
                   </p>
                   <h3 className="mt-2 text-xl font-semibold text-white">
-                    Solve Medium Graph Question
+                    {primaryAction.title}
                   </h3>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-200">
@@ -637,7 +677,7 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Google readiness</span>
+                    <span className="text-gray-400">{readinessTargetLabel}</span>
                     <span className="font-medium text-white">
                       {companyReadinessItems[0]?.readiness ?? 0}%
                     </span>
@@ -679,6 +719,189 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <GlassPanel className="border-blue-400/15 bg-blue-500/[0.03]">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-200/80">
+                  What matters now
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-white">
+                  {primaryAction.title}
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-400">
+                  Zentric picked this from your mission, weak area, planner,
+                  learning progress, coding activity, Second Brain, and Career
+                  Hub signals.
+                </p>
+              </div>
+              <Badge className="w-fit border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+                {primaryAction.impact} expected lift
+              </Badge>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[0.75fr_1fr]">
+              <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">Mission progress</p>
+                    <p className="mt-1 text-4xl font-bold text-white">
+                      {missionProgress.overallProgress}%
+                    </p>
+                  </div>
+                  <ProgressRing value={missionProgress.overallProgress} label="Mission" />
+                </div>
+                <Progress value={missionProgress.overallProgress} className="h-2.5" />
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-2xl bg-white/[0.04] p-3">
+                    <p className="text-xs text-gray-500">Weakest</p>
+                    <p className="mt-1 font-semibold text-red-200">
+                      {weakestSignal?.label ?? "Calculating"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/[0.04] p-3">
+                    <p className="text-xs text-gray-500">Strongest</p>
+                    <p className="mt-1 font-semibold text-emerald-200">
+                      {strongestSignal?.label ?? "Calculating"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {nextPlanItems.map((item, index) => (
+                  <Link
+                    key={`${item.time}-${item.title}`}
+                    href={item.href}
+                    className={`group flex items-center gap-4 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-500/[0.05] ${
+                      index === 0
+                        ? "border-blue-400/40 bg-blue-500/[0.08]"
+                        : "border-white/10 bg-white/[0.03]"
+                    }`}
+                  >
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/[0.06] text-sm font-bold text-white">
+                      {item.time}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-white">{item.title}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge variant="secondary">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {item.duration}
+                        </Badge>
+                        <Badge className="border-purple-400/30 bg-purple-400/10 text-purple-200">
+                          {item.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-gray-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-200" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </GlassPanel>
+
+          <div className="grid gap-6">
+            <GlassPanel>
+              <SectionHeader icon={Bot} eyebrow="AI Coach" title="Next decisions" />
+              <div className="space-y-3">
+                {visibleCoachSignals.map((signal) => (
+                  <div
+                    key={signal.insight}
+                    className="rounded-2xl border border-purple-400/10 bg-purple-500/[0.05] p-4"
+                  >
+                    <p className="text-sm leading-6 text-gray-200">{signal.insight}</p>
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="mt-3 h-8 rounded-full text-purple-200 hover:bg-purple-500/10"
+                    >
+                      <Link href={signal.href}>
+                        {signal.action}
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </GlassPanel>
+
+            <GlassPanel>
+              <SectionHeader icon={Lightbulb} eyebrow="Momentum" title="Coach message" />
+              <p className="rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.05] p-4 text-sm leading-6 text-emerald-50/90">
+                {motivation}
+              </p>
+            </GlassPanel>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {systemSignalCards.map((card) => (
+            <Link
+              key={card.title}
+              href={card.href}
+              className="group rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/30 hover:bg-blue-500/[0.05]"
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-200">
+                  <card.icon className="h-5 w-5" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-200" />
+              </div>
+              <p className="text-sm text-gray-400">{card.title}</p>
+              <p className="mt-2 text-3xl font-bold text-white">{card.value}</p>
+              <p className="mt-3 text-sm leading-6 text-gray-500">{card.detail}</p>
+            </Link>
+          ))}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <GlassPanel>
+            <SectionHeader icon={ShieldCheck} eyebrow="Company Readiness" title="Top targets" />
+            <div className="space-y-3">
+              {topCompanies.map((company) => (
+                <button
+                  key={company.company}
+                  type="button"
+                  onClick={() => setSelectedCompany(company)}
+                  className={`w-full rounded-2xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
+                    selectedCompany.company === company.company
+                      ? "border-purple-400/50 bg-purple-500/10"
+                      : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                  }`}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="font-semibold text-white">{company.company}</p>
+                    <p className="font-bold text-blue-200">{company.readiness}%</p>
+                  </div>
+                  <Progress value={company.readiness} className="h-2" />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Missing: {company.missing.slice(0, 2).join(", ")}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </GlassPanel>
+
+          <GlassPanel>
+            <SectionHeader icon={BarChart3} eyebrow="Connected system" title="Mission breakdown" />
+            <div className="space-y-3">
+              {missionProgress.breakdown.map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-200">{item.label}</span>
+                    <span className="font-semibold text-white">{item.value}%</span>
+                  </div>
+                  <Progress value={item.value} />
+                  {item.source && <p className="mt-2 text-xs text-gray-500">{item.source}</p>}
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+        </div>
+
+        <div className="hidden">
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <GlassPanel>
             <SectionHeader
@@ -1029,6 +1252,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </GlassPanel>
+        </div>
       </div>
     </div>
   );

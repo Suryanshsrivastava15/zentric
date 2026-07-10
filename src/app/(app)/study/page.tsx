@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Plus,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +80,10 @@ const DSA_TOPICS = [
   "Sorting Algorithms", "Recursion & Backtracking", "Heaps",
   "Hash Maps", "Tries", "Sliding Window", "Two Pointers",
 ];
+
+function codingHubHref(topicId: string, topicName: string, questionId: string) {
+  return `/coding-hub?studyTopicId=${encodeURIComponent(topicId)}&topic=${encodeURIComponent(topicName)}&questionId=${encodeURIComponent(questionId)}`;
+}
 
 export default function StudyPage() {
   const [topics, setTopics] = useState<StudyTopic[]>([]);
@@ -186,6 +192,14 @@ export default function StudyPage() {
     inProgress: topics.filter((t) => t.status === "in_progress").length,
     notStarted: topics.filter((t) => t.status === "not_started").length,
   };
+  const practiceStats = Object.values(practiceByTopic).reduce(
+    (summary, practice) => ({
+      completedQuestions: summary.completedQuestions + practice.completedCount,
+      totalQuestions: summary.totalQuestions + practice.totalQuestions,
+    }),
+    { completedQuestions: 0, totalQuestions: 0 },
+  );
+  const attentionTopics = topics.filter((topic) => topic.status !== "completed").length;
 
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
   const categories = ["all", ...Array.from(new Set(topics.map((t) => t.category)))];
@@ -201,7 +215,7 @@ export default function StudyPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Study Tracker</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Track your DSA, LeetCode, and learning progress
+            Track topic mastery, revision status, and assigned questions. Solve them inside Coding Hub.
           </p>
         </div>
         <Button
@@ -216,10 +230,10 @@ export default function StudyPage() {
       {/* Progress Overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Topics", value: stats.total, color: "text-white" },
-          { label: "Completed", value: stats.completed, color: "text-green-400" },
+          { label: "Tracked Topics", value: stats.total, color: "text-white" },
+          { label: "Questions Solved", value: `${practiceStats.completedQuestions}/${practiceStats.totalQuestions}`, color: "text-green-400" },
           { label: "In Progress", value: stats.inProgress, color: "text-blue-400" },
-          { label: "Not Started", value: stats.notStarted, color: "text-gray-400" },
+          { label: "Need Attention", value: attentionTopics, color: "text-yellow-300" },
         ].map((s) => (
           <div key={s.label} className="p-4 rounded-xl bg-white/3 border border-white/8 text-center">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -235,7 +249,7 @@ export default function StudyPage() {
             <BarChart3 className="w-5 h-5 text-purple-400 flex-shrink-0" />
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-300">Overall Progress</span>
+                <span className="text-gray-300">Topic Mastery Progress</span>
                 <span className="text-purple-400 font-medium">{completionRate}%</span>
               </div>
               <Progress value={completionRate} />
@@ -307,15 +321,29 @@ export default function StudyPage() {
           <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
         </div>
       ) : filteredTopics.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <BookOpen className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400 mb-2">No study topics found</p>
-            <Button variant="ghost" className="text-purple-400" onClick={() => setShowAdd(true)}>
-              Add your first topic
+        <EmptyState
+          icon={BookOpen}
+          title={topics.length === 0 ? "Build your first study track." : "No topics match this filter."}
+          description={
+            topics.length === 0
+              ? "Add a topic and Zentric will attach practice questions, progress tracking, and Coding Hub links so the topic becomes measurable."
+              : "Try another status filter or add a fresh topic for your current goal."
+          }
+          action={
+            <Button onClick={() => setShowAdd(true)} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+              <Plus className="w-4 h-4" />
+              Add study topic
             </Button>
-          </CardContent>
-        </Card>
+          }
+          secondary={
+            <Button asChild variant="outline" className="border-blue-400/30 text-blue-100">
+              <Link href="/ai-coach">
+                Generate roadmap
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredTopics.map((topic) => {
@@ -325,6 +353,8 @@ export default function StudyPage() {
             const completedCount = practice?.completedCount ?? 0;
             const totalQuestions = practice?.totalQuestions ?? 25;
             const progressPercent = practice?.progressPercent ?? 0;
+            const nextQuestion = practice?.questions.find((question) => !question.completed) ?? practice?.questions[0];
+            const nextHref = nextQuestion ? codingHubHref(topic.id, topic.name, nextQuestion.id) : "";
             return (
               <div
                 key={topic.id}
@@ -360,34 +390,47 @@ export default function StudyPage() {
                 )}
                 <div className="mb-3 rounded-lg border border-white/8 bg-black/20 p-3">
                   <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Question progress</span>
+                    <span className="text-gray-400">Mastery progress</span>
                     <span className="font-semibold text-white">
                       {completedCount}/{totalQuestions}
                     </span>
                   </div>
                   <Progress value={progressPercent} />
+                  <p className="mt-2 text-[11px] text-gray-500">
+                    {nextQuestion ? `Next: ${nextQuestion.title}` : "Load the path to start practicing."}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <StatusIcon className={`w-3.5 h-3.5 ${status.color}`} />
                     <Badge variant={status.bg} className="capitalize">
                       {status.label}
                     </Badge>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openPractice(topic.id)}
-                    disabled={practiceLoading === topic.id}
-                    className="h-8 rounded-lg text-xs text-blue-300 hover:bg-blue-500/10"
-                  >
-                    {practiceLoading === topic.id ? (
-                      <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                    ) : (
-                      <Code2 className="mr-1.5 h-3 w-3" />
+                  <div className="flex gap-2">
+                    {nextQuestion && (
+                      <Button asChild size="sm" className="h-8 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-xs text-white">
+                        <Link href={nextHref}>
+                          <Code2 className="mr-1.5 h-3 w-3" />
+                          Practice Next
+                        </Link>
+                      </Button>
                     )}
-                    25 Questions
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openPractice(topic.id)}
+                      disabled={practiceLoading === topic.id}
+                      className="h-8 rounded-lg text-xs text-blue-300 hover:bg-blue-500/10"
+                    >
+                      {practiceLoading === topic.id ? (
+                        <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                      ) : (
+                        <ChevronRight className="mr-1.5 h-3 w-3" />
+                      )}
+                      View Path
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
@@ -402,20 +445,33 @@ export default function StudyPage() {
               <div>
                 <CardTitle className="flex items-center gap-2 text-white">
                   <Code2 className="h-5 w-5 text-blue-300" />
-                  {selectedPractice.topic.name} Practice Path
+                  {selectedPractice.topic.name} Mastery Path
                 </CardTitle>
                 <p className="mt-2 text-sm text-gray-400">
-                  Complete all 25 questions to mark this topic completed.
+                  Study Tracker tracks this path. Coding Hub is where you solve, run tests, submit, and update progress.
                 </p>
               </div>
-              <div className="min-w-[220px] rounded-xl border border-white/10 bg-black/20 p-3">
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="text-gray-400">Topic completion</span>
-                  <span className="font-semibold text-white">
-                    {selectedPractice.completedCount}/{selectedPractice.totalQuestions}
-                  </span>
+              <div className="flex flex-col gap-3 md:min-w-[280px]">
+                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="text-gray-400">Topic completion</span>
+                    <span className="font-semibold text-white">
+                      {selectedPractice.completedCount}/{selectedPractice.totalQuestions}
+                    </span>
+                  </div>
+                  <Progress value={selectedPractice.progressPercent} />
                 </div>
-                <Progress value={selectedPractice.progressPercent} />
+                {(() => {
+                  const nextQuestion = selectedPractice.questions.find((question) => !question.completed) ?? selectedPractice.questions[0];
+                  return nextQuestion ? (
+                    <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                      <Link href={codingHubHref(selectedPractice.topic.id, selectedPractice.topic.name, nextQuestion.id)}>
+                        <Code2 className="h-4 w-4" />
+                        Practice next in Coding Hub
+                      </Link>
+                    </Button>
+                  ) : null;
+                })()}
               </div>
             </div>
           </CardHeader>
@@ -429,7 +485,7 @@ export default function StudyPage() {
                 )}`;
 
                 return (
-                  <a
+                  <Link
                     key={question.id}
                     href={href}
                     className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3 transition hover:-translate-y-0.5 hover:border-blue-400/35 hover:bg-blue-500/[0.06]"
@@ -466,7 +522,7 @@ export default function StudyPage() {
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-gray-600 transition group-hover:translate-x-1 group-hover:text-blue-300" />
-                  </a>
+                  </Link>
                 );
               })}
             </div>

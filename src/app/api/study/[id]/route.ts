@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordCoachEvent } from "@/lib/ai-coach";
 
 export async function PATCH(
   req: NextRequest,
@@ -32,6 +33,26 @@ export async function PATCH(
       notes: body.notes !== undefined ? body.notes : topic.notes,
     },
   });
+
+  if (topic.status !== "completed" && updated.status === "completed") {
+    await recordCoachEvent(session.user.id, {
+      type: "study_topic_completed",
+      module: "Study Tracker",
+      title: `Completed topic: ${updated.name}`,
+      detail: "Topic mastery updated and available to AI Coach.",
+      impact: 4,
+      metadata: { topicId: updated.id, category: updated.category },
+    });
+  } else if (topic.status !== updated.status) {
+    await recordCoachEvent(session.user.id, {
+      type: "study_topic_updated",
+      module: "Study Tracker",
+      title: `Updated topic: ${updated.name}`,
+      detail: `Status changed to ${updated.status.replace("_", " ")}.`,
+      impact: 2,
+      metadata: { topicId: updated.id, status: updated.status },
+    });
+  }
 
   return NextResponse.json(updated);
 }

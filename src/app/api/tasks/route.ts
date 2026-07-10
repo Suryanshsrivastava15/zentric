@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, unauthorized, badRequest } from "@/lib/api-error";
 import { isValidPriority } from "@/lib/utils";
+import { recordCoachEvent } from "@/lib/ai-coach";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
@@ -68,6 +69,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         deadline: deadline ? new Date(deadline) : null,
         userId: session.user.id,
       },
+    });
+
+    await recordCoachEvent(session.user.id, {
+      type: "task_created",
+      module: "Planner",
+      title: `Created task: ${task.title}`,
+      detail: `${task.priority} priority task added to Planner.`,
+      impact: task.priority === "high" ? 2 : 1,
+      metadata: { taskId: task.id, priority: task.priority },
     });
 
     return NextResponse.json(task, { status: 201 });

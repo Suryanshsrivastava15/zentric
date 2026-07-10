@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getPracticeQuestion, normalizePracticeTopic } from "@/lib/practice-questions";
+import { getPracticeQuestion, getPracticeQuestions, normalizePracticeTopic } from "@/lib/practice-questions";
 
 type Difficulty = "Easy" | "Medium" | "Hard";
 type Language = "javascript" | "python" | "java" | "cpp" | "c";
@@ -53,6 +53,10 @@ type Challenge = {
   tests: ChallengeTest[];
   hint: string;
   estimatedMinutes?: number;
+  pattern?: string;
+  expectedComplexity?: string;
+  edgeCases?: string[];
+  source?: "curated" | "study-bank" | "ai";
 };
 
 const languages: Record<
@@ -91,11 +95,44 @@ const languages: Record<
   },
 };
 
+const practiceTopics = [
+  "Arrays",
+  "Strings",
+  "Linked Lists",
+  "Stacks",
+  "Trees",
+  "Binary Search",
+  "Dynamic Programming",
+  "Graphs",
+  "Sorting Algorithms",
+  "Recursion & Backtracking",
+  "Heaps",
+  "Hash Maps",
+  "Tries",
+  "Sliding Window",
+  "Two Pointers",
+];
+
 type TestResult = {
   passed: boolean;
   actual?: unknown;
   expected: unknown;
   error?: string;
+};
+
+type RunResponse = {
+  results: TestResult[];
+  passedCount: number;
+  totalTests: number;
+  score: number;
+  allPassed: boolean;
+  finalSubmit?: boolean;
+  studyProgress?: {
+    completedCount: number;
+    totalQuestions: number;
+    progressPercent: number;
+    status: string;
+  };
 };
 
 const challenges: Challenge[] = [
@@ -286,6 +323,64 @@ const executionTests: Record<string, Array<{ stdin: string; expectedOutput: stri
   ],
 };
 
+function challengePattern(challenge: Challenge) {
+  if (challenge.pattern) return challenge.pattern;
+  const topicPatterns: Record<string, string> = {
+    Arrays: "array traversal / prefix technique",
+    Strings: "frequency map / two pointers",
+    "Linked Lists": "slow-fast pointers / pointer simulation",
+    Stacks: "stack simulation / monotonic stack",
+    Trees: "DFS/BFS traversal",
+    "Binary Search": "search space reduction",
+    "Dynamic Programming": "state transition",
+    Graphs: "BFS/DFS graph traversal",
+    "Sorting Algorithms": "sorting + greedy/order reasoning",
+    "Recursion & Backtracking": "choice tree recursion",
+    Heaps: "priority queue / top-k",
+    "Hash Maps": "hashing / complement lookup",
+    Tries: "prefix tree",
+    "Sliding Window": "window expand-shrink",
+    "Two Pointers": "opposite or write pointers",
+  };
+  return topicPatterns[challenge.topic] ?? "problem solving pattern";
+}
+
+function challengeComplexity(challenge: Challenge) {
+  if (challenge.expectedComplexity) return challenge.expectedComplexity;
+  const topicComplexities: Record<string, string> = {
+    Arrays: "Usually O(n) time, O(1)-O(n) space",
+    Strings: "Usually O(n) time, O(1)-O(n) space",
+    "Linked Lists": "Usually O(n) time, O(1) space",
+    Stacks: "Usually O(n) time, O(n) space",
+    Trees: "Usually O(n) time, O(h) or O(n) space",
+    "Binary Search": "Usually O(log n) time, O(1) space",
+    "Dynamic Programming": "Usually O(n) or O(n*m) time depending on state",
+    Graphs: "Usually O(V + E) time",
+    Heaps: "Usually O(n log k) or O(n log n) time",
+  };
+  return topicComplexities[challenge.topic] ?? "Optimize beyond brute force when possible";
+}
+
+function challengeEdgeCases(challenge: Challenge) {
+  if (challenge.edgeCases?.length) return challenge.edgeCases;
+  const base = ["empty/minimum input", "duplicates", "negative or boundary values"];
+  if (challenge.topic === "Graphs") return ["disconnected graph", "single node", "cycle or no path"];
+  if (challenge.topic === "Trees") return ["empty/null nodes", "single node", "skewed tree"];
+  if (challenge.topic === "Binary Search") return ["target missing", "first/last position", "one element"];
+  if (challenge.topic === "Dynamic Programming") return ["zero state", "impossible case", "large input"];
+  return base;
+}
+
+function strengthenChallenge(challenge: Challenge, source: Challenge["source"] = "study-bank"): Challenge {
+  return {
+    ...challenge,
+    source,
+    pattern: challengePattern(challenge),
+    expectedComplexity: challengeComplexity(challenge),
+    edgeCases: challengeEdgeCases(challenge),
+  };
+}
+
 function getTests(challenge: Challenge) {
   if (challenge.tests.every((test) => test.stdin !== undefined)) {
     return challenge.tests.map((test) => ({
@@ -294,6 +389,11 @@ function getTests(challenge: Challenge) {
     }));
   }
   return executionTests[challenge.id] ?? [];
+}
+
+function getJudgeTests(challenge: Challenge, finalSubmit = false) {
+  const tests = getTests(challenge);
+  return finalSubmit ? tests : tests.slice(0, Math.min(3, tests.length));
 }
 
 function inputGuide(challenge: Challenge) {
@@ -398,7 +498,8 @@ function dailyChallenge() {
   const dayNumber = Math.floor(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000,
   );
-  return challenges[dayNumber % challenges.length] ?? challenges[0]!;
+  const bank = getPracticeQuestions("Arrays");
+  return strengthenChallenge((bank[dayNumber % bank.length] ?? challenges[0]!) as Challenge);
 }
 
 export default function CodingHubPage() {
@@ -407,7 +508,7 @@ export default function CodingHubPage() {
   const [language, setLanguage] = useState<Language>("javascript");
   const [code, setCode] = useState(starterCodeFor(daily, "javascript"));
   const [topic, setTopic] = useState("All topics");
-  const [difficulty, setDifficulty] = useState("Medium");
+  const [difficulty, setDifficulty] = useState("All");
   const [results, setResults] = useState<TestResult[] | null>(null);
   const [running, setRunning] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -422,6 +523,7 @@ export default function CodingHubPage() {
     questionId: string;
   } | null>(null);
   const [studyProgressMessage, setStudyProgressMessage] = useState("");
+  const [submissionMessage, setSubmissionMessage] = useState("");
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -431,9 +533,11 @@ export default function CodingHubPage() {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const filteredChallenges = challenges.filter(
-    (challenge) => topic === "All topics" || challenge.topic === topic,
-  );
+  const bankTopic = topic === "All topics" ? "Arrays" : normalizePracticeTopic(topic);
+  const filteredChallenges = (topic === "All topics"
+    ? practiceTopics.flatMap((item) => getPracticeQuestions(item).slice(0, 5)).map((challenge) => strengthenChallenge(challenge as Challenge, "study-bank"))
+    : getPracticeQuestions(bankTopic).map((challenge) => strengthenChallenge(challenge as Challenge, "study-bank"))
+  ).filter((challenge) => difficulty === "All" || challenge.difficulty === difficulty);
 
   const chooseChallenge = (challenge: Challenge) => {
     setSelected(challenge);
@@ -443,6 +547,7 @@ export default function CodingHubPage() {
     setShowHint(false);
     setError("");
     setStudyProgressMessage("");
+    setSubmissionMessage("");
   };
 
   useEffect(() => {
@@ -452,35 +557,54 @@ export default function CodingHubPage() {
       const questionId = params.get("questionId");
       const topicParam = params.get("topic");
 
-      if (!studyTopicId || !questionId || !topicParam) return;
+      if (!topicParam) return;
 
       const normalizedTopic = normalizePracticeTopic(topicParam);
+      setTopic(normalizedTopic);
+      setDifficulty("All");
+
+      if (!studyTopicId || !questionId) {
+        const firstQuestion = getPracticeQuestions(normalizedTopic)[0];
+        if (firstQuestion) {
+          setSelected(strengthenChallenge(firstQuestion as Challenge, "study-bank"));
+          setCode(starterCodeFor(firstQuestion as Challenge, "javascript"));
+          setResults(null);
+          setReview("");
+          setShowHint(false);
+          setError("");
+          setStudyProgressMessage("");
+          setSubmissionMessage("");
+        }
+        return;
+      }
+
       const practiceQuestion = getPracticeQuestion(normalizedTopic, questionId);
       if (!practiceQuestion) return;
+      const strengthenedQuestion = strengthenChallenge(practiceQuestion as Challenge, "study-bank");
 
       setStudyContext({ studyTopicId, questionId });
-      setTopic(normalizedTopic);
-      setDifficulty(practiceQuestion.difficulty);
-      setSelected(practiceQuestion);
-      setCode(starterCodeFor(practiceQuestion, "javascript"));
+      setSelected(strengthenedQuestion);
+      setCode(starterCodeFor(strengthenedQuestion, "javascript"));
       setResults(null);
       setReview("");
       setShowHint(false);
       setError("");
       setStudyProgressMessage("");
+      setSubmissionMessage("");
     });
 
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const runTests = async (submitForStudy = false) => {
-    if (submitForStudy) {
+  const runTests = async (submitForStudy = false, finalSubmit = false) => {
+    if (submitForStudy || finalSubmit) {
       setSubmittingSolution(true);
     } else {
       setRunning(true);
     }
     setError("");
     setReview("");
+    setSubmissionMessage("");
     if (submitForStudy) setStudyProgressMessage("");
     try {
       const response = await fetch("/api/coding-hub", {
@@ -490,31 +614,44 @@ export default function CodingHubPage() {
           action: "run",
           language,
           code,
-          tests: getTests(selected),
+          tests: getJudgeTests(selected, finalSubmit),
+          title: selected.title,
+          topic: selected.topic,
+          difficulty: selected.difficulty,
           studyTopicId: studyContext?.studyTopicId,
           questionId: studyContext?.questionId,
           submitForStudy,
+          finalSubmit,
         }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to run this solution.");
-      const testResults = data.results as TestResult[];
+      const runData = data as RunResponse;
+      const testResults = runData.results;
       setResults(testResults);
 
-      if (testResults.every((result) => result.passed) && !completed.includes(selected.id)) {
+      if (finalSubmit && testResults.every((result) => result.passed) && !completed.includes(selected.id)) {
         const nextCompleted = [...completed, selected.id];
         setCompleted(nextCompleted);
         window.localStorage.setItem("zentric-coding-completed", JSON.stringify(nextCompleted));
       }
 
-      if (data.studyProgress) {
+      if (runData.studyProgress) {
         setStudyProgressMessage(
-          `Study Tracker updated: ${data.studyProgress.completedCount}/${data.studyProgress.totalQuestions} questions completed. Status: ${String(data.studyProgress.status).replace("_", " ")}.`,
+          `Study Tracker updated: ${runData.studyProgress.completedCount}/${runData.studyProgress.totalQuestions} questions completed. Status: ${String(runData.studyProgress.status).replace("_", " ")}.`,
         );
       } else if (submitForStudy && !testResults.every((result) => result.passed)) {
         setStudyProgressMessage("Fix the failing tests, then submit again to update Study Tracker.");
       } else if (submitForStudy) {
         setStudyProgressMessage("This question could not be linked to Study Tracker. Open it from the Study page and try again.");
+      }
+
+      if (finalSubmit && !submitForStudy) {
+        setSubmissionMessage(
+          runData.allPassed
+            ? `Accepted: ${runData.score}% score across full judge tests. This coding practice now counts toward your growth timeline.`
+            : `Not accepted yet: ${runData.score}% score on full judge tests. Fix failing tests and submit again.`,
+        );
       }
     } catch (runError) {
       setResults(null);
@@ -536,7 +673,7 @@ export default function CodingHubPage() {
         body: JSON.stringify({
           action: "generate",
           topic: topic === "All topics" ? "Arrays and problem solving" : topic,
-          difficulty,
+          difficulty: difficulty === "All" ? "Medium" : difficulty,
           language,
         }),
       });
@@ -547,8 +684,9 @@ export default function CodingHubPage() {
         ...data.challenge,
         id: `ai-${data.challenge.id || "challenge"}-${Date.now()}`,
         estimatedMinutes: data.challenge.estimatedMinutes || 20,
+        source: "ai",
       } as Challenge;
-      chooseChallenge(generated);
+      chooseChallenge(strengthenChallenge(generated, "ai"));
     } catch (generationError) {
       setError(
         generationError instanceof Error
@@ -587,7 +725,35 @@ export default function CodingHubPage() {
     }
   };
 
+  const toggleHint = async () => {
+    const willShow = !showHint;
+    setShowHint(willShow);
+    if (!willShow) return;
+
+    await fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "record_event",
+        type: "coding_hint_used",
+        module: "Coding Hub",
+        title: `Used hint: ${selected.title}`,
+        detail: `Hint requested for ${selected.topic} (${selected.difficulty}).`,
+        impact: 1,
+        metadata: {
+          challengeId: selected.id,
+          topic: selected.topic,
+          difficulty: selected.difficulty,
+          language,
+        },
+      }),
+    }).catch(() => undefined);
+  };
+
   const passedCount = results?.filter((result) => result.passed).length ?? 0;
+  const visibleTestCount = getJudgeTests(selected, false).length;
+  const fullJudgeTestCount = getJudgeTests(selected, true).length;
+  const lastRunWasFinal = Boolean(results && results.length === fullJudgeTestCount);
 
   return (
     <main className="mx-auto max-w-[1500px] p-5 lg:p-8">
@@ -649,24 +815,7 @@ export default function CodingHubPage() {
               <SelectValue placeholder="Topic" />
             </SelectTrigger>
             <SelectContent>
-              {[
-                "All topics",
-                "Arrays",
-                "Strings",
-                "Linked Lists",
-                "Stacks",
-                "Trees",
-                "Binary Search",
-                "Dynamic Programming",
-                "Graphs",
-                "Sorting Algorithms",
-                "Recursion & Backtracking",
-                "Heaps",
-                "Hash Maps",
-                "Tries",
-                "Sliding Window",
-                "Two Pointers",
-              ].map((item) => (
+              {["All topics", ...practiceTopics].map((item) => (
                 <SelectItem key={item} value={item}>{item}</SelectItem>
               ))}
             </SelectContent>
@@ -676,7 +825,7 @@ export default function CodingHubPage() {
               <SelectValue placeholder="Difficulty" />
             </SelectTrigger>
             <SelectContent>
-              {["Easy", "Medium", "Hard"].map((item) => (
+              {["All", "Easy", "Medium", "Hard"].map((item) => (
                 <SelectItem key={item} value={item}>{item}</SelectItem>
               ))}
             </SelectContent>
@@ -761,6 +910,11 @@ export default function CodingHubPage() {
                     <Sparkles className="mr-1 size-3" /> AI generated
                   </Badge>
                 )}
+                {selected.source === "study-bank" && (
+                  <Badge className="border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                    LeetCode-style bank
+                  </Badge>
+                )}
               </div>
               <CardTitle className="text-xl text-white">{selected.title}</CardTitle>
             </CardHeader>
@@ -768,6 +922,21 @@ export default function CodingHubPage() {
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Problem</h3>
                 <p className="text-sm leading-6 text-gray-300">{selected.description}</p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-purple-500/15 bg-purple-500/[0.05] p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-purple-300">Pattern</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-300">{challengePattern(selected)}</p>
+                </div>
+                <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.05] p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-blue-300">Expected Complexity</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-300">{challengeComplexity(selected)}</p>
+                </div>
+                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.05] p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-emerald-300">Edge Cases</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-300">{challengeEdgeCases(selected).join(", ")}</p>
+                </div>
               </div>
 
               <div>
@@ -801,11 +970,24 @@ export default function CodingHubPage() {
                 </p>
               </div>
 
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500">Sample run</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{visibleTestCount} visible tests</p>
+                  <p className="mt-1 text-xs text-gray-500">Use this while building your approach.</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500">Final judge</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{fullJudgeTestCount} total tests</p>
+                  <p className="mt-1 text-xs text-gray-500">Submit final to count this as solved.</p>
+                </div>
+              </div>
+
               <div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowHint((visible) => !visible)}
+                  onClick={toggleHint}
                   className="border-amber-500/20 text-amber-300 hover:bg-amber-500/10"
                 >
                   <Lightbulb className="mr-2 size-3.5" />
@@ -876,7 +1058,7 @@ export default function CodingHubPage() {
               />
               <div className="flex flex-col gap-2 border-t border-white/8 bg-white/[0.02] p-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[11px] text-gray-600">
-                  Compiles in an isolated online sandbox. Read stdin and print the exact answer.
+                  Run tests uses visible samples. Submit final runs the full judge set and records accepted solutions.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -894,35 +1076,50 @@ export default function CodingHubPage() {
                     className="border-0 bg-gradient-to-r from-cyan-600 to-blue-600 text-white"
                   >
                     {running ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Play className="mr-2 size-4 fill-white" />}
-                    Run tests
+                    Run sample tests
                   </Button>
-                  {studyContext && (
-                    <Button
-                      onClick={() => runTests(true)}
-                      disabled={running || submittingSolution}
-                      className="border-0 bg-gradient-to-r from-emerald-600 to-blue-600 text-white"
-                    >
-                      {submittingSolution ? (
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                      ) : (
-                        <Check className="mr-2 size-4" />
-                      )}
-                      Submit solution
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => studyContext ? runTests(true, true) : runTests(false, true)}
+                    disabled={running || submittingSolution}
+                    className="border-0 bg-gradient-to-r from-emerald-600 to-blue-600 text-white"
+                  >
+                    {submittingSolution ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Check className="mr-2 size-4" />
+                    )}
+                    {studyContext ? "Submit to Study" : "Submit final"}
+                  </Button>
                 </div>
               </div>
             </Card>
+
+            {submissionMessage && (
+              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+                {submissionMessage}
+              </div>
+            )}
 
             {results && (
               <Card className={`border ${passedCount === results.length ? "border-emerald-500/20" : "border-red-500/20"} bg-white/[0.025]`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base text-white">Test results</CardTitle>
+                    <CardTitle className="text-base text-white">
+                      {lastRunWasFinal && passedCount === results.length ? "Accepted" : lastRunWasFinal ? "Judge results" : "Sample results"}
+                    </CardTitle>
                     <span className={`text-sm font-semibold ${passedCount === results.length ? "text-emerald-300" : "text-red-300"}`}>
                       {passedCount}/{results.length} passed
                     </span>
                   </div>
+                  <p className="pt-2 text-xs text-gray-500">
+                    {passedCount === results.length
+                      ? lastRunWasFinal
+                        ? "Full judge accepted. This solution can now count toward Coding Hub progress."
+                        : "Sample tests passed. Submit final to check hidden/edge tests and record progress."
+                      : lastRunWasFinal
+                        ? "Some judge tests failed. Fix the edge cases, then submit again."
+                        : "Some sample tests failed. Compare expected vs received, then run again."}
+                  </p>
                 </CardHeader>
                 <CardContent className="grid gap-2 sm:grid-cols-2">
                   {results.map((result, index) => (

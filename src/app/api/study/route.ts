@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordCoachEvent } from "@/lib/ai-coach";
 
 export async function GET() {
   const session = await auth();
@@ -37,6 +38,15 @@ export async function POST(req: NextRequest) {
       notes: notes || null,
       userId: session.user.id,
     },
+  });
+
+  await recordCoachEvent(session.user.id, {
+    type: "study_topic_created",
+    module: "Study Tracker",
+    title: `Started topic: ${topic.name}`,
+    detail: `${topic.category} topic added with ${topic.difficulty} difficulty.`,
+    impact: 2,
+    metadata: { topicId: topic.id, category: topic.category, difficulty: topic.difficulty },
   });
 
   return NextResponse.json(topic, { status: 201 });

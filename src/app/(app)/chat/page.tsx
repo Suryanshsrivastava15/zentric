@@ -13,6 +13,7 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Textarea } from "@/components/ui/textarea";
 import { formatRelativeTime } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -243,9 +244,18 @@ export default function ChatPage() {
 
         <div className="flex-1 overflow-y-auto p-2">
           {conversations.length === 0 ? (
-            <div className="text-center py-8 text-gray-600 text-sm">
-              No conversations yet
-            </div>
+            <EmptyState
+              icon={MessageSquare}
+              title="No chats yet"
+              description="Start a focused conversation with Ask Zentric. Your previous coaching, interview, and study chats will stay here."
+              className="p-4"
+              action={
+                <Button onClick={createConversation} size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                  <Plus className="h-4 w-4" />
+                  Start chat
+                </Button>
+              }
+            />
           ) : (
             conversations.map((conv) => (
               <div

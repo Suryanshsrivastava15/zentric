@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { buildAICoachSnapshot, recordCoachEvent } from "@/lib/ai-coach";
 import Groq from "groq-sdk";
 import OpenAI from "openai";
 
@@ -95,8 +96,29 @@ export async function POST(req: NextRequest) {
       content: m.content,
     }));
 
+    const coach = await buildAICoachSnapshot(session.user.id);
+    const dailyRoadmap = coach.dailyPlan.map((item) => `${item.title} (${item.duration}, ${item.priority})`);
+    const coachContext = `\n\nCurrent Zentric AI Coach context:
+- User: ${coach.user.name}
+- Career goal: ${coach.memory.careerGoal} at ${coach.memory.dreamCompany}
+- Growth score: ${coach.metrics.growthScore}%
+- Strongest area: ${coach.metrics.strongestArea.label} (${coach.metrics.strongestArea.value}%)
+- Weakest area: ${coach.metrics.weakestArea.label} (${coach.metrics.weakestArea.value}%)
+- Today's roadmap plan: ${dailyRoadmap.length ? dailyRoadmap.join("; ") : "No daily roadmap topics yet"}
+- Planner logic: deadline, daily study minutes, weak topics, and visited roadmap topics decide today's routine.
+
+Use this context naturally. You are Ask Zentric, the conversational surface of the AI Coach. Do not pretend to have data outside this context.`;
+
+    await recordCoachEvent(session.user.id, {
+      type: "ask_zentric_message",
+      module: "Ask Zentric",
+      title: "Asked Zentric a question",
+      detail: message.trim().slice(0, 160),
+      impact: 1,
+    });
+
     const aiStream = createAIResponse([
-        { role: "system", content: conversation.systemPrompt ?? SYSTEM_PROMPT },
+        { role: "system", content: `${conversation.systemPrompt ?? SYSTEM_PROMPT}${coachContext}` },
         ...history,
         { role: "user", content: message.trim() },
     ]);

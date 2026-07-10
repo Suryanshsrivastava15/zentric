@@ -1,24 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ElementType, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpenCheck,
   Brain,
   BriefcaseBusiness,
+  CheckCircle2,
   Clock3,
+  ClipboardList,
   FileText,
   FolderKanban,
   Hash,
   Inbox,
+  Layers3,
+  Lightbulb,
+  Network,
   Loader2,
   Microscope,
   Plus,
+  Repeat2,
   Save,
   Search,
   Sparkles,
+  Target,
   Trash2,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -42,6 +51,20 @@ interface Note {
   createdAt: string;
   updatedAt: string;
 }
+
+type GeneratedCard = {
+  front: string;
+  back: string;
+  source: string;
+};
+
+type KnowledgeConnection = {
+  label: string;
+  count: number;
+  notes: string[];
+};
+
+type SmartDraftKind = "learning_recap" | "interview_story" | "project_evidence" | "research_digest";
 
 const categories = [
   {
@@ -170,6 +193,343 @@ function getCategory(categoryId: CategoryId) {
   return categories.find((category) => category.id === categoryId) ?? categories[0];
 }
 
+function daysSince(value: string) {
+  const updated = new Date(value).getTime();
+  if (Number.isNaN(updated)) return 0;
+  return Math.max(0, Math.floor((Date.now() - updated) / (1000 * 60 * 60 * 24)));
+}
+
+function splitTags(value?: string | null) {
+  return (value ?? "")
+    .split(/[,#]/)
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function extractImportantWords(note: Note) {
+  const text = `${note.title} ${note.tags ?? ""} ${note.content}`.toLowerCase();
+  const words = text.match(/[a-z][a-z0-9+#.-]{2,}/g) ?? [];
+  const ignored = new Set([
+    "and",
+    "the",
+    "for",
+    "with",
+    "this",
+    "that",
+    "from",
+    "into",
+    "your",
+    "what",
+    "will",
+    "note",
+    "notes",
+    "project",
+  ]);
+  return Array.from(new Set(words.filter((word) => !ignored.has(word)))).slice(0, 8);
+}
+
+function clampScore(value: number) {
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function buildKnowledgeConnections(notes: Note[]): KnowledgeConnection[] {
+  const map = new Map<string, Set<string>>();
+
+  notes.forEach((note) => {
+    [...splitTags(note.tags), ...extractImportantWords(note).slice(0, 4)].forEach((label) => {
+      if (!map.has(label)) map.set(label, new Set());
+      map.get(label)?.add(note.title);
+    });
+  });
+
+  return Array.from(map.entries())
+    .map(([label, titles]) => ({ label, count: titles.size, notes: Array.from(titles).slice(0, 4) }))
+    .filter((item) => item.count >= 2)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+}
+
+function firstUsefulLine(note: Note) {
+  const strongLine = note.content
+    .split(/\n|\. /)
+    .map((line) => line.replace(/^#+\s*/, "").replace(/^[-*]\s*/, "").trim())
+    .find((line) => line.length > 28);
+  return strongLine ?? (note.content.trim().slice(0, 160) || "Review this note and explain the main idea.");
+}
+
+function buildFlashcards(notes: Note[]): GeneratedCard[] {
+  return notes
+    .filter((note) => note.content.trim().length > 30)
+    .slice(0, 10)
+    .flatMap((note) => {
+      const keywords = extractImportantWords(note).slice(0, 3);
+      const mainLine =
+        note.content.split(/\n|\. /).find((line) => line.trim().length > 20)?.trim() ??
+        "Review this note and summarize the core idea.";
+      const category = getCategory(note.category).shortName;
+
+      return [
+        {
+          front: `What should you remember from "${note.title}"?`,
+          back: keywords.length
+            ? `Key signals: ${keywords.join(", ")}. Review the note and explain it in your own words.`
+            : mainLine,
+          source: note.title,
+        },
+        {
+          front: `Explain one real use of "${note.title}".`,
+          back: `${category} memory: connect it to one task, interview answer, project decision, or revision point.`,
+          source: note.title,
+        },
+        {
+          front: `What mistake should you avoid for "${note.title}"?`,
+          back: `Do not only reread it. Recall the idea, write a tiny example, and update weak points after practice.`,
+          source: note.title,
+        },
+      ];
+    })
+    .slice(0, 24);
+}
+
+function buildMemoryBrief(notes: Note[], connections: KnowledgeConnection[], revisionQueue: Note[]) {
+  const categoriesCovered = Array.from(new Set(notes.map((note) => getCategory(note.category).shortName)));
+  const latest = notes[0];
+  return {
+    remembers: latest
+      ? `Latest memory: ${latest.title}. Zentric can reuse this for ${getCategory(latest.category).name.toLowerCase()}, revision, and coaching context.`
+      : "No memories captured yet. Add one learning, interview, project, or research note.",
+    connection: connections[0]
+      ? `${connections[0].label} connects ${connections[0].count} notes: ${connections[0].notes.join(", ")}.`
+      : "No strong topic graph yet. Reuse tags like graphs, resume, react, interview, or project to connect memories.",
+    revision: revisionQueue[0]
+      ? `${revisionQueue[0].title} is ${daysSince(revisionQueue[0].updatedAt)} days old and should be revised next.`
+      : "No overdue revision. Add more notes or revisit older learning after 2 days.",
+    coverage: categoriesCovered.length
+      ? `Coverage: ${categoriesCovered.join(", ")}.`
+      : "Coverage: empty.",
+  };
+}
+
+function buildCareerEvidence(notes: Note[]) {
+  return notes
+    .filter((note) => {
+      const tags = splitTags(note.tags);
+      return (
+        note.category === "project" ||
+        note.category === "interview" ||
+        tags.some((tag) => ["resume", "evidence", "portfolio", "achievement", "case-study"].includes(tag))
+      );
+    })
+    .slice(0, 5)
+    .map((note) => ({
+      title: note.title,
+      category: getCategory(note.category).shortName,
+      proof: firstUsefulLine(note),
+    }));
+}
+
+function buildMemoryPackContent({
+  notes,
+  flashcards,
+  connections,
+  revisionQueue,
+}: {
+  notes: Note[];
+  flashcards: GeneratedCard[];
+  connections: KnowledgeConnection[];
+  revisionQueue: Note[];
+}) {
+  const recent = notes.slice(0, 6);
+  const evidence = buildCareerEvidence(notes);
+
+  return [
+    "## Second Brain Memory Pack",
+    "",
+    "### What Zentric should remember",
+    "",
+    recent.length
+      ? recent.map((note) => `- ${note.title}: ${firstUsefulLine(note)}`).join("\n")
+      : "- Add notes from Learning Mode, Coding Hub, Career Hub, or your own study.",
+    "",
+    "### Knowledge connections",
+    "",
+    connections.length
+      ? connections.slice(0, 6).map((item) => `- ${item.label}: ${item.notes.join(", ")}`).join("\n")
+      : "- No strong connections yet. Add repeated tags to connect knowledge.",
+    "",
+    "### Flashcards",
+    "",
+    flashcards.length
+      ? flashcards.slice(0, 8).map((card) => `- Q: ${card.front}\n  A: ${card.back}`).join("\n")
+      : "- Create longer notes to generate flashcards.",
+    "",
+    "### Revision queue",
+    "",
+    revisionQueue.length
+      ? revisionQueue.slice(0, 6).map((note) => `- Revise ${note.title} (${daysSince(note.updatedAt)} days old)`).join("\n")
+      : "- Nothing overdue yet.",
+    "",
+    "### Planner-ready recall prompts",
+    "",
+    revisionQueue.length
+      ? revisionQueue
+          .slice(0, 4)
+          .map((note) => {
+            const cards = buildFlashcards([note]).slice(0, 3);
+            return [
+              `- ${note.title}`,
+              ...cards.map((card) => `  - ${card.front}`),
+            ].join("\n");
+          })
+          .join("\n")
+      : "- No recall prompts yet.",
+    "",
+    "### Career evidence",
+    "",
+    evidence.length
+      ? evidence.map((item) => `- ${item.title} (${item.category}): ${item.proof}`).join("\n")
+      : "- Add project or interview notes to create resume/interview evidence.",
+  ].join("\n");
+}
+
+function buildRevisionTaskDescription(note: Note) {
+  const cards = buildFlashcards([note]).slice(0, 3);
+  const recallQuestions = cards.length
+    ? cards.map((card, index) => `${index + 1}. ${card.front}`).join("\n")
+    : "1. What is the main idea?\n2. Where can you apply it?\n3. What mistake should you avoid?";
+
+  return [
+    `Review this ${getCategory(note.category).name.toLowerCase()} note.`,
+    "",
+    `Memory seed: ${firstUsefulLine(note)}`,
+    "",
+    "Recall questions:",
+    recallQuestions,
+    "",
+    "After revision, update the note with weak points, examples, and next action.",
+  ].join("\n");
+}
+
+function buildSmartDraft(kind: SmartDraftKind, recentLearning: Note | null) {
+  const today = new Date().toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  const drafts: Record<
+    SmartDraftKind,
+    { title: string; category: CategoryId; tags: string; content: string }
+  > = {
+    learning_recap: {
+      title: `Learning Recap - ${today}`,
+      category: "learning",
+      tags: "learning-recap,revision,ai-coach",
+      content: `## Topic learned
+
+
+## Explain it in my words
+
+
+## Example or application
+
+
+## Mistakes / weak points
+
+- 
+
+## 3 flashcard points
+
+- 
+- 
+- 
+
+## Next revision action
+
+`,
+    },
+    interview_story: {
+      title: `Interview Story - ${today}`,
+      category: "interview",
+      tags: "interview,star-story,career-evidence",
+      content: `## Target role / company
+
+
+## Question or situation
+
+
+## STAR answer
+
+Situation:
+
+Task:
+
+Action:
+
+Result:
+
+## Technical depth to mention
+
+
+## Feedback / improvement
+
+`,
+    },
+    project_evidence: {
+      title: `Project Evidence - ${today}`,
+      category: "project",
+      tags: "project,resume,evidence,portfolio",
+      content: `## Project / feature
+
+
+## Problem solved
+
+
+## What I built
+
+
+## Tech used
+
+
+## Impact / metric
+
+
+## Resume bullet draft
+
+- Built ...
+
+## Proof links / screenshots
+
+`,
+    },
+    research_digest: {
+      title: `Research Digest - ${today}`,
+      category: "research",
+      tags: "research,digest,sources",
+      content: `## Research question
+
+
+## Best sources
+
+- 
+
+## Key findings
+
+- 
+
+## My conclusion
+
+
+## How this helps my goal
+
+${recentLearning ? `Connected memory: ${recentLearning.title}` : ""}
+`,
+    },
+  };
+
+  return drafts[kind];
+}
+
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +538,9 @@ export default function NotesPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingMemoryAction, setSavingMemoryAction] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [editForm, setEditForm] = useState({
     title: "",
     content: "",
@@ -244,10 +606,41 @@ export default function NotesPage() {
     });
   }, [activeFilter, notes, search]);
 
+  const revisionQueue = useMemo(
+    () =>
+      notes
+        .filter((note) => daysSince(note.updatedAt) >= 2)
+        .sort((a, b) => daysSince(b.updatedAt) - daysSince(a.updatedAt))
+        .slice(0, 6),
+    [notes],
+  );
+
+  const flashcards = useMemo(() => buildFlashcards(notes), [notes]);
+  const knowledgeConnections = useMemo(() => buildKnowledgeConnections(notes), [notes]);
+  const memoryBrief = useMemo(
+    () => buildMemoryBrief(notes, knowledgeConnections, revisionQueue),
+    [knowledgeConnections, notes, revisionQueue],
+  );
+  const careerEvidence = useMemo(() => buildCareerEvidence(notes), [notes]);
+  const recentLearning = notes.find((note) => note.category === "learning") ?? notes[0] ?? null;
+  const missingSpaces = useMemo(
+    () => categories.filter((category) => counts[category.id] === 0).map((category) => category.shortName),
+    [counts],
+  );
+  const memoryHealthScore = useMemo(() => {
+    const coverageScore = (categories.length - missingSpaces.length) * 14;
+    const notesScore = Math.min(notes.length, 12) * 3;
+    const flashcardScore = Math.min(flashcards.length, 12) * 1.5;
+    const connectionScore = Math.min(knowledgeConnections.length, 6) * 3;
+    const revisionPenalty = Math.min(revisionQueue.length, 5) * 4;
+    return clampScore(coverageScore + notesScore + flashcardScore + connectionScore - revisionPenalty);
+  }, [flashcards.length, knowledgeConnections.length, missingSpaces.length, notes.length, revisionQueue.length]);
+
   const openNote = (note: Note) => {
     setSelectedNote(note);
     setIsCreating(false);
     setError("");
+    setMessage("");
     setEditForm({
       title: note.title,
       content: note.content,
@@ -263,6 +656,7 @@ export default function NotesPage() {
     setSelectedNote(null);
     setIsCreating(true);
     setError("");
+    setMessage("");
     setEditForm({
       title: "",
       content: categoryConfig.template,
@@ -271,10 +665,86 @@ export default function NotesPage() {
     });
   };
 
+  const startCreateGenerated = ({
+    title,
+    content,
+    category,
+    tags,
+  }: {
+    title: string;
+    content: string;
+    category: CategoryId;
+    tags: string;
+  }) => {
+    setSelectedNote(null);
+    setIsCreating(true);
+    setError("");
+    setMessage("");
+    setEditForm({ title, content, category, tags });
+  };
+
+  const createMemoryPackDraft = () => {
+    startCreateGenerated({
+      title: "Second Brain Memory Pack",
+      category: "second_brain",
+      tags: "memory-pack,flashcards,revision,career-evidence",
+      content: buildMemoryPackContent({
+        notes,
+        flashcards,
+        connections: knowledgeConnections,
+        revisionQueue,
+      }),
+    });
+  };
+
+  const createSmartDraft = (kind: SmartDraftKind) => {
+    startCreateGenerated(buildSmartDraft(kind, recentLearning));
+  };
+
+  const sendRevisionToPlanner = async () => {
+    const revisionTargets = revisionQueue.length ? revisionQueue.slice(0, 5) : notes.slice(0, 3);
+
+    if (revisionTargets.length === 0) {
+      setMessage("Add a note first, then Zentric can create revision tasks.");
+      return;
+    }
+
+    setSavingMemoryAction(true);
+    setError("");
+    setMessage("");
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const deadline = tomorrow.toISOString().slice(0, 10);
+
+      await Promise.all(
+        revisionTargets.map((note) =>
+          fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: `Second Brain revision: ${note.title}`,
+              description: buildRevisionTaskDescription(note),
+              priority: daysSince(note.updatedAt) >= 7 ? "high" : "medium",
+              deadline,
+            }),
+          }),
+        ),
+      );
+
+      setMessage(`${revisionTargets.length} Second Brain revision task${revisionTargets.length === 1 ? "" : "s"} added to Planner.`);
+    } catch {
+      setError("Unable to send revision tasks to Planner.");
+    } finally {
+      setSavingMemoryAction(false);
+    }
+  };
+
   const saveNote = async () => {
     if (!editForm.title.trim()) return;
     setSaving(true);
     setError("");
+    setMessage("");
 
     try {
       const response = await fetch(
@@ -367,6 +837,154 @@ export default function NotesPage() {
         </div>
       )}
 
+      {message && (
+        <div className="mx-5 mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200 lg:mx-7">
+          {message}
+        </div>
+      )}
+
+      <section className="mx-auto grid w-full max-w-[1600px] gap-4 px-5 py-5 lg:px-7 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[1.4rem] border border-purple-400/20 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-transparent p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <Badge className="mb-3 border-purple-400/30 bg-purple-400/10 text-purple-100">
+                AI Memory System
+              </Badge>
+              <h2 className="text-xl font-bold text-white">Your learning memory, connected to your growth mission.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+                Second Brain now stores learning notes, interview reports, project decisions, research,
+                flashcards, revision signals, and knowledge links that AI Coach can use.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={createMemoryPackDraft}
+                className="border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+              >
+                <Brain className="mr-2 size-4" />
+                Create Memory Pack
+              </Button>
+              <Button
+                onClick={sendRevisionToPlanner}
+                disabled={savingMemoryAction}
+                variant="outline"
+                className="border-emerald-400/30 text-emerald-100"
+              >
+                {savingMemoryAction ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Repeat2 className="mr-2 size-4" />}
+                Send Revision to Planner
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <MemoryStat icon={Target} label="Memory Health" value={`${memoryHealthScore}%`} />
+            <MemoryStat icon={Brain} label="Notes Captured" value={String(notes.length)} />
+            <MemoryStat icon={Repeat2} label="Revision Due" value={String(revisionQueue.length)} />
+            <MemoryStat icon={Layers3} label="Flashcards" value={String(flashcards.length)} />
+            <MemoryStat icon={Network} label="Connections" value={String(knowledgeConnections.length)} />
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <ClipboardList className="size-4 text-purple-300" />
+                  Smart capture actions
+                </p>
+                <p className="mt-1 text-xs leading-5 text-gray-500">
+                  Use these after a learning session, interview simulation, project update, or research session so AI Coach gets clean memory.
+                </p>
+              </div>
+              {missingSpaces.length > 0 && (
+                <Badge className="w-fit border-yellow-400/30 bg-yellow-400/10 text-yellow-100">
+                  Missing: {missingSpaces.join(", ")}
+                </Badge>
+              )}
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <Button onClick={() => createSmartDraft("learning_recap")} variant="outline" className="justify-start border-blue-400/25 text-blue-100">
+                <BookOpenCheck className="mr-2 size-4" />
+                Learning Recap
+              </Button>
+              <Button onClick={() => createSmartDraft("interview_story")} variant="outline" className="justify-start border-orange-400/25 text-orange-100">
+                <BriefcaseBusiness className="mr-2 size-4" />
+                Interview Story
+              </Button>
+              <Button onClick={() => createSmartDraft("project_evidence")} variant="outline" className="justify-start border-emerald-400/25 text-emerald-100">
+                <CheckCircle2 className="mr-2 size-4" />
+                Project Evidence
+              </Button>
+              <Button onClick={() => createSmartDraft("research_digest")} variant="outline" className="justify-start border-cyan-400/25 text-cyan-100">
+                <Microscope className="mr-2 size-4" />
+                Research Digest
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+          <div className="rounded-[1.4rem] border border-blue-400/20 bg-blue-400/10 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Brain className="size-4 text-blue-200" />
+              <p className="font-semibold text-white">What Zentric Remembers</p>
+            </div>
+            <div className="space-y-2 text-sm leading-6 text-gray-300">
+              <p>{memoryBrief.remembers}</p>
+              <p className="text-gray-500">{memoryBrief.coverage}</p>
+            </div>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.035] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Lightbulb className="size-4 text-yellow-300" />
+              <p className="font-semibold text-white">Next Memory Action</p>
+            </div>
+            <p className="text-sm leading-6 text-gray-400">
+              {revisionQueue[0]
+                ? `Revise "${revisionQueue[0].title}" today so the knowledge does not fade.`
+                : recentLearning
+                  ? `Connect "${recentLearning.title}" with a project, quiz, or interview note.`
+                  : "Create one learning note from today’s work so AI Coach has memory to use."}
+            </p>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.035] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Network className="size-4 text-cyan-300" />
+              <p className="font-semibold text-white">Strongest Connections</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {knowledgeConnections.length === 0 ? (
+                <span className="text-sm text-gray-500">Add tags like graph, resume, project, react, interview.</span>
+              ) : knowledgeConnections.slice(0, 5).map((item) => (
+                <Badge key={item.label} className="border-cyan-400/30 bg-cyan-400/10 text-cyan-100">
+                  {item.label} · {item.count}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-emerald-400/20 bg-emerald-400/10 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <BriefcaseBusiness className="size-4 text-emerald-200" />
+              <p className="font-semibold text-white">Career Evidence</p>
+            </div>
+            <div className="space-y-2">
+              {careerEvidence.length === 0 ? (
+                <p className="text-sm leading-6 text-gray-500">
+                  Add project or interview notes. Zentric will extract resume proof and interview stories from them.
+                </p>
+              ) : careerEvidence.slice(0, 3).map((item) => (
+                <div key={item.title} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                  <p className="text-sm font-medium text-white">{item.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-400">{item.proof}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 xl:grid-cols-[230px_330px_minmax(0,1fr)]">
         <aside className="border-b border-white/8 p-4 xl:border-b-0 xl:border-r">
           <button
@@ -441,16 +1059,22 @@ export default function NotesPage() {
                 <Loader2 className="size-5 animate-spin text-purple-400" />
               </div>
             ) : visibleNotes.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center">
-                <FileText className="mx-auto mb-3 size-8 text-gray-700" />
-                <p className="text-sm text-gray-500">Nothing here yet</p>
-                <button
-                  onClick={() => startCreate()}
-                  className="mt-2 text-xs font-medium text-purple-400 hover:text-purple-300"
-                >
-                  Capture your first note
-                </button>
-              </div>
+              <EmptyState
+                icon={FileText}
+                title={notes.length === 0 ? "Your Second Brain is empty." : "No notes match this filter."}
+                description={
+                  notes.length === 0
+                    ? "Capture learning notes, interview feedback, project ideas, and research. Zentric will turn them into memory, flashcards, and revision signals."
+                    : "Switch category or search terms to reveal more notes."
+                }
+                className="p-5"
+                action={
+                  <Button onClick={() => startCreate()} size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                    <Plus className="size-4" />
+                    Capture note
+                  </Button>
+                }
+              />
             ) : (
               visibleNotes.map((note) => {
                 const category = getCategory(note.category || "second_brain");
@@ -590,27 +1214,90 @@ export default function NotesPage() {
             </div>
           ) : (
             <div className="flex min-h-[520px] items-center justify-center p-6">
-              <div className="max-w-md text-center">
+              <div className="w-full max-w-3xl">
                 <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10">
                   <Sparkles className="size-7 text-purple-300" />
                 </div>
-                <h2 className="text-xl font-semibold text-white">Build your second brain</h2>
-                <p className="mt-2 text-sm leading-6 text-gray-500">
-                  Capture what matters, connect it with tags, and keep every kind of knowledge in
-                  the right space.
-                </p>
-                <Button
-                  onClick={() => startCreate()}
-                  className="mt-5 border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
-                >
-                  <Plus className="mr-2 size-4" />
-                  Capture a note
-                </Button>
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold text-white">Build your AI memory layer</h2>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+                    Capture what matters, connect it with tags, and let Zentric turn notes into
+                    flashcards, revision, and career evidence.
+                  </p>
+                  <Button
+                    onClick={() => startCreate()}
+                    className="mt-5 border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                  >
+                    <Plus className="mr-2 size-4" />
+                    Capture a note
+                  </Button>
+                </div>
+
+                <div className="mt-8 grid gap-4 md:grid-cols-3">
+                  <MemoryPanel title="Revision Queue" icon={Repeat2}>
+                    {revisionQueue.length === 0 ? (
+                      <p className="text-xs leading-5 text-gray-500">No overdue notes yet.</p>
+                    ) : revisionQueue.slice(0, 3).map((note) => (
+                      <button
+                        key={note.id}
+                        onClick={() => openNote(note)}
+                        className="block w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left text-xs text-gray-300 hover:border-purple-400/30"
+                      >
+                        {note.title}
+                        <span className="mt-1 block text-[10px] text-gray-600">{daysSince(note.updatedAt)} days old</span>
+                      </button>
+                    ))}
+                  </MemoryPanel>
+
+                  <MemoryPanel title="Flashcards" icon={Layers3}>
+                    {flashcards.length === 0 ? (
+                      <p className="text-xs leading-5 text-gray-500">Create longer notes to generate flashcards.</p>
+                    ) : flashcards.slice(0, 2).map((card) => (
+                      <div key={`${card.source}-${card.front}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs">
+                        <p className="font-medium text-white">{card.front}</p>
+                        <p className="mt-2 leading-5 text-gray-500">{card.back}</p>
+                      </div>
+                    ))}
+                  </MemoryPanel>
+
+                  <MemoryPanel title="Knowledge Graph" icon={Network}>
+                    {knowledgeConnections.length === 0 ? (
+                      <p className="text-xs leading-5 text-gray-500">Use repeated tags to create connections.</p>
+                    ) : knowledgeConnections.slice(0, 4).map((item) => (
+                      <div key={item.label} className="rounded-xl bg-white/[0.03] px-3 py-2 text-xs text-gray-300">
+                        {item.label}
+                        <span className="float-right text-gray-600">{item.count}</span>
+                      </div>
+                    ))}
+                  </MemoryPanel>
+                </div>
               </div>
             </div>
           )}
         </section>
       </div>
     </main>
+  );
+}
+
+function MemoryStat({ icon: Icon, label, value }: { icon: ElementType; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <Icon className="mb-3 size-4 text-purple-300" />
+      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="text-xs text-gray-500">{label}</p>
+    </div>
+  );
+}
+
+function MemoryPanel({ title, icon: Icon, children }: { title: string; icon: ElementType; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="size-4 text-blue-300" />
+        <p className="text-sm font-semibold text-white">{title}</p>
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
   );
 }

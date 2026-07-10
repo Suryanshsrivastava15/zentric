@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, unauthorized, badRequest } from "@/lib/api-error";
 import { sanitizeString } from "@/lib/utils";
+import { recordCoachEvent } from "@/lib/ai-coach";
 
 const noteCategories = new Set([
   "second_brain",
@@ -85,6 +86,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         category,
         userId: session.user.id,
       },
+    });
+
+    await recordCoachEvent(session.user.id, {
+      type: "note_created",
+      module: "Second Brain",
+      title: `Created ${category.replace("_", " ")} note: ${note.title}`,
+      detail: "Second Brain knowledge added for AI Coach memory.",
+      impact: category === "project" || category === "interview" ? 3 : 2,
+      metadata: { noteId: note.id, category },
     });
 
     return NextResponse.json(note, { status: 201 });

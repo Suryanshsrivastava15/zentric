@@ -1,337 +1,349 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
-  BrainCircuit,
-  Check,
-  Code2,
+  Zap,
+  Lock,
   Eye,
   EyeOff,
+  ArrowRight,
   Loader2,
-  LockKeyhole,
-  Mail,
-  Sparkles,
+  Brain,
   Target,
+  Code2,
+  Check,
+  Fingerprint,
   UserRound,
-  Zap,
 } from "lucide-react";
 
-const features = [
-  { icon: BrainCircuit, text: "AI-powered task prioritization" },
-  { icon: Code2, text: "DSA & LeetCode progress tracking" },
-  { icon: Target, text: "Personalized study recommendations" },
-];
-
-const particles = [
-  ["8%", "14%", "3px", "0s"],
-  ["18%", "72%", "2px", "1.2s"],
-  ["29%", "34%", "4px", "2.1s"],
-  ["42%", "84%", "2px", "0.8s"],
-  ["53%", "18%", "3px", "2.8s"],
-  ["64%", "64%", "4px", "1.7s"],
-  ["76%", "27%", "2px", "3.1s"],
-  ["87%", "78%", "3px", "0.4s"],
-  ["94%", "43%", "2px", "2.4s"],
-];
-
 export default function SignInPage() {
+  const router = useRouter();
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [identifier, setIdentifier] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    setNotice("");
-
-    if (!email.trim()) {
-      setError("Enter your email address.");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifier) {
+      setError("Email is required");
       return;
     }
-
-    if (mode === "signup" && displayName.trim().length < 2) {
-      setError("Enter the name you want Zentric to call you.");
+    if (authMode === "signup" && displayName.trim().length < 2) {
+      setError("Enter your name so Zentric can personalize your dashboard.");
       return;
     }
-
     if (password.length < 8) {
-      setError("Password must contain at least 8 characters.");
+      setError("Password must be at least 8 characters.");
       return;
     }
-
     setLoading(true);
+    setError("");
+
     const result = await signIn("credentials", {
-      email: email.trim(),
-      name: displayName.trim(),
+      email: identifier.includes("@") ? identifier : `${identifier}@zentric.ai`,
+      name: authMode === "signup" ? displayName.trim() : identifier.split("@")[0],
       password,
-      mode,
-      keepSignedIn: keepSignedIn ? "true" : "false",
+      mode: authMode,
       redirect: false,
     });
 
     if (result?.ok) {
-      window.location.assign("/dashboard");
-      return;
+      router.push("/dashboard");
+    } else {
+      setError(
+        authMode === "signup"
+          ? "Unable to create account. This email may already exist, or the details are invalid."
+          : "Invalid credentials. Please verify your email and password.",
+      );
+      setLoading(false);
     }
-
-    setError(
-      mode === "signup"
-        ? "An account already exists for this email, or the account could not be created."
-        : "Email or password is incorrect. New here? Create a free account below.",
-    );
-    setLoading(false);
   };
 
-  const switchMode = () => {
-    setMode((current) => (current === "signin" ? "signup" : "signin"));
-    setError("");
-    setNotice("");
-  };
+  const features = [
+    { icon: Brain, text: "AI-powered task prioritization" },
+    { icon: Code2, text: "DSA & LeetCode progress tracking" },
+    { icon: Target, text: "Personalized study recommendations" },
+  ];
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05070F] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
-      <div className="pointer-events-none absolute -left-44 top-1/3 size-[560px] rounded-full bg-blue-600/15 blur-[140px]" />
-      <div className="pointer-events-none absolute bottom-[-240px] left-1/3 size-[520px] rounded-full bg-purple-600/12 blur-[150px]" />
-      <div className="pointer-events-none absolute -right-48 top-20 size-[520px] rounded-full bg-indigo-600/10 blur-[160px]" />
+    <div className="min-h-screen flex overflow-hidden lg:bg-[#05070F]" style={{ background: "#05070F" }}>
+      {/* ── LEFT SIDE: BRANDING & EXPERIENCE ──────────────────────── */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[15%] -left-[10%] w-[700px] h-[700px] rounded-full bg-blue-600/10 blur-[140px]" />
+          <div className="absolute bottom-[-5%] right-[-5%] w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[120px]" />
+        </div>
 
-      <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
-        <section className="relative hidden min-h-screen flex-col justify-between border-r border-white/[0.06] px-12 py-10 lg:flex xl:px-20 xl:py-14">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            {particles.map(([left, top, size, delay]) => (
-              <span
-                key={`${left}-${top}`}
-                className="auth-particle absolute rounded-full bg-blue-300/45 shadow-[0_0_18px_rgba(96,165,250,0.8)]"
-                style={{ left, top, width: size, height: size, animationDelay: delay }}
-              />
+        <div className="absolute inset-0 pointer-events-none opacity-25">
+          {Array.from({ length: 25 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-blue-400/20 animate-pulse"
+              style={{
+                width: `${2 + (i % 4)}px`,
+                height: `${2 + (i % 4)}px`,
+                left: `${(i * 17) % 100}%`,
+                top: `${(i * 23) % 100}%`,
+                animationDuration: `${3 + (i % 5)}s`,
+                animationDelay: `${i * 0.2}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 group cursor-pointer transition-transform active:scale-95 w-fit">
+            <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(59,130,246,0.5)] transform group-hover:rotate-[5deg] transition-all duration-500 ring-1 ring-white/10">
+              <Zap className="w-6 h-6 text-white fill-current" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black text-white tracking-tighter leading-none">ZENTRIC</span>
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="w-1 h-1 rounded-full bg-blue-500 animate-ping" />
+                <span className="text-[9px] text-blue-400 font-black uppercase tracking-[0.3em] bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10">
+                  AI Productivity OS
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 max-w-xl mb-12">
+          <h1 className="text-[68px] font-bold text-white leading-[1.05] mb-8 tracking-[-0.03em]">
+            Your AI-powered <br />
+            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-blue-500 bg-clip-text text-transparent bg-[length:200%_auto] animate-shimmer">
+              productivity engine.
+            </span>
+          </h1>
+          <p className="text-gray-400 text-xl leading-relaxed mb-12 max-w-[480px] font-medium opacity-90">
+            Designed for high-achievers who want to stop guessing and start execution—leveraging AI that understands your long-term ambitions.
+          </p>
+          
+          <div className="grid grid-cols-1 gap-6">
+            {features.map(({ icon: Icon, text }) => (
+              <div 
+                key={text} 
+                className="flex items-center gap-5 group transition-all"
+              >
+                <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-blue-500/40 group-hover:bg-blue-500/5 transition-all duration-300 ring-1 ring-transparent group-hover:ring-blue-500/10">
+                  <Icon className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-200 text-base font-semibold group-hover:text-white transition-colors">
+                    {text}
+                  </span>
+                  <div className="h-[2px] w-0 bg-blue-500/30 group-hover:w-full transition-all duration-700" />
+                </div>
+              </div>
             ))}
           </div>
+        </div>
 
-          <div className="relative flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 shadow-[0_0_32px_rgba(79,70,229,0.35)]">
-              <Zap className="size-5 fill-white text-white" />
-            </div>
-            <span className="text-xl font-semibold tracking-[-0.03em]">Zentric</span>
-            <span className="ml-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1 text-[11px] font-medium tracking-wide text-blue-300">
-              AI Productivity OS
-            </span>
-          </div>
+        <div className="relative z-10 flex items-center gap-8 text-[10px] text-gray-700 uppercase tracking-[0.3em] font-black">
+          <span className="hover:text-gray-500 cursor-default transition-colors">© 2026 ZENTRICLABS</span>
+          <div className="w-1 h-1 rounded-full bg-gray-800" />
+          <span className="hover:text-gray-500 cursor-pointer transition-colors">Enterprise Cloud</span>
+        </div>
+      </div>
 
-          <div className="relative max-w-xl pb-4">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.035] px-3 py-1.5 text-xs text-slate-400">
-              <Sparkles className="size-3.5 text-blue-400" />
-              Built to turn ambition into momentum
-            </div>
-            <h1 className="max-w-[620px] text-5xl font-semibold leading-[1.08] tracking-[-0.045em] text-white xl:text-6xl">
-              Your AI-powered{" "}
-              <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                productivity engine.
-              </span>
-            </h1>
-            <p className="mt-7 max-w-[570px] text-base leading-7 text-slate-400 xl:text-[17px]">
-              Built for students, developers, and job seekers who want to stop guessing and start
-              achieving—with AI that actually understands your goals.
-            </p>
-
-            <div className="mt-10 space-y-4">
-              {features.map(({ icon: Icon, text }) => (
-                <div key={text} className="group flex items-center gap-3.5">
-                  <div className="flex size-9 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-400/[0.07] transition group-hover:border-blue-400/30 group-hover:bg-blue-400/10">
-                    <Icon className="size-4 text-blue-300" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-300">{text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="relative text-xs text-slate-700">© 2026 Zentric. Focus on what matters.</p>
-        </section>
-
-        <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
-          <div className="w-full max-w-[450px]">
-            <div className="mb-8 flex items-center justify-center gap-2.5 lg:hidden">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-indigo-500/20">
-                <Zap className="size-4 fill-white text-white" />
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative">
+        <div className="absolute inset-0 bg-[#05070F] lg:bg-transparent pointer-events-none" />
+        
+        <div className="w-full max-w-[440px] relative z-10">
+          <div
+            className="rounded-[32px] border border-white/5 p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
+            style={{ 
+              background: "linear-gradient(135deg, rgba(15, 18, 28, 0.8) 100%, rgba(8, 10, 15, 0.9) 100%)", 
+              backdropFilter: "blur(40px)",
+            }}
+          >
+            <div className="flex flex-col items-center mb-12">
+              <div className="mb-8 inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-blue-500/20 bg-blue-500/[0.03] backdrop-blur-xl">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                <span className="text-[10px] font-black text-blue-100 uppercase tracking-[0.25em]">Cloud Authentication</span>
               </div>
-              <span className="text-lg font-semibold tracking-tight">Zentric</span>
-            </div>
-
-            <div className="rounded-[20px] border border-white/[0.09] bg-white/[0.035] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.48)] backdrop-blur-2xl sm:p-9">
-              <div className="mb-8 text-center">
-                <span className="inline-flex rounded-full border border-indigo-400/20 bg-indigo-400/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-300">
-                  {mode === "signin" ? "Sign In" : "Create Account"}
-                </span>
-                <h2 className="mt-5 text-3xl font-semibold tracking-[-0.035em] text-white">
-                  {mode === "signin" ? "Sign in to Zentric" : "Create your Zentric account"}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  {mode === "signin"
-                    ? "Track your goals, one focused day at a time."
-                    : "Start building a calmer, smarter path to your goals."}
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {mode === "signup" && (
-                  <div>
-                    <label
-                      htmlFor="displayName"
-                      className="mb-2 block text-sm font-medium text-slate-300"
-                    >
-                      Your name
-                    </label>
-                    <div className="group relative">
-                      <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-600 transition group-focus-within:text-blue-400" />
-                      <input
-                        id="displayName"
-                        type="text"
-                        value={displayName}
-                        onChange={(event) => setDisplayName(event.target.value)}
-                        placeholder="What should Zentric call you?"
-                        autoComplete="name"
-                        minLength={2}
-                        maxLength={50}
-                        required
-                        className="h-12 w-full rounded-xl border border-white/10 bg-black/20 pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-700 hover:border-white/15 focus:border-blue-500/60 focus:bg-blue-500/[0.025] focus:ring-4 focus:ring-blue-500/10"
-                      />
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-600">
-                      This name will appear in your dashboard greeting.
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
-                    Email address
-                  </label>
-                  <div className="group relative">
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-600 transition group-focus-within:text-blue-400" />
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      required
-                      className="h-12 w-full rounded-xl border border-white/10 bg-black/20 pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-700 hover:border-white/15 focus:border-blue-500/60 focus:bg-blue-500/[0.025] focus:ring-4 focus:ring-blue-500/10"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label htmlFor="password" className="text-sm font-medium text-slate-300">
-                      Password
-                    </label>
-                    {mode === "signin" && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setNotice(
-                            "Password reset email is not enabled yet. Create a new account or contact the app owner.",
-                          )
-                        }
-                        className="text-xs font-medium text-blue-400 transition hover:text-blue-300"
-                      >
-                        Forgot password?
-                      </button>
-                    )}
-                  </div>
-                  <div className="group relative">
-                    <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-600 transition group-focus-within:text-blue-400" />
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Minimum 8 characters"
-                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                      minLength={8}
-                      required
-                      className="h-12 w-full rounded-xl border border-white/10 bg-black/20 pl-10 pr-11 text-sm text-white outline-none transition placeholder:text-slate-700 hover:border-white/15 focus:border-blue-500/60 focus:bg-blue-500/[0.025] focus:ring-4 focus:ring-blue-500/10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((visible) => !visible)}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 transition hover:text-slate-300 focus:outline-none"
-                    >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {mode === "signin" && (
-                  <label className="flex w-fit cursor-pointer items-center gap-2.5 text-xs text-slate-400">
-                    <input
-                      type="checkbox"
-                      checked={keepSignedIn}
-                      onChange={(event) => setKeepSignedIn(event.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <span className="flex size-4 items-center justify-center rounded border border-white/15 bg-white/5 transition peer-checked:border-blue-500 peer-checked:bg-blue-600 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-400/50">
-                      {keepSignedIn && <Check className="size-2.5 text-white" strokeWidth={3} />}
-                    </span>
-                    Keep me signed in for 30 days.
-                  </label>
-                )}
-
-                {error && (
-                  <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-3.5 py-3 text-xs leading-5 text-red-300">
-                    {error}
-                  </p>
-                )}
-                {notice && !error && (
-                  <p className="rounded-xl border border-blue-400/20 bg-blue-400/10 px-3.5 py-3 text-xs leading-5 text-blue-200">
-                    {notice}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-sm font-semibold text-white shadow-[0_12px_35px_rgba(79,70,229,0.25)] transition duration-300 hover:-translate-y-0.5 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 hover:shadow-[0_16px_45px_rgba(79,70,229,0.35)] focus:outline-none focus:ring-4 focus:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-                >
-                  {loading ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <>
-                      {mode === "signin" ? "Sign In" : "Create Account"}
-                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <p className="mt-7 text-center text-xs text-slate-500">
-                {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
-                <button
-                  type="button"
-                  onClick={switchMode}
-                  className="font-semibold text-blue-400 transition hover:text-blue-300"
-                >
-                  {mode === "signin" ? "Create one free." : "Sign in."}
-                </button>
+              <h2 className="text-4xl font-bold text-white mb-3 tracking-tight text-center">
+                {authMode === "signup" ? "Create your Zentric account" : "Sign in to Zentric"}
+              </h2>
+              <p className="text-gray-500 text-[15px] font-semibold text-center opacity-80">
+                {authMode === "signup" ? "Start your AI growth mission today" : "Track your goals, one focused day at a time."}
               </p>
             </div>
 
-            <p className="mt-5 text-center text-[11px] leading-5 text-slate-700">
-              Protected by encrypted credentials and secure session cookies.
-            </p>
+            <form onSubmit={handleSubmit} className="space-y-7">
+              {authMode === "signup" && (
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-end px-1">
+                    <label className="text-[12px] font-black text-gray-500 uppercase tracking-widest leading-none">Your Name</label>
+                    <span className="text-[10px] text-blue-500/60 font-medium">Used for greetings</span>
+                  </div>
+                  <div className="relative group">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center text-gray-600 group-focus-within:text-blue-500 transition-colors pointer-events-none duration-300">
+                      <UserRound className="w-[18px] h-[18px]" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Enter your name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      required={authMode === "signup"}
+                      className="w-full bg-black/40 border border-white/5 rounded-[22px] pl-14 pr-6 py-4.5 text-white placeholder-gray-700 text-[15px] outline-none hover:border-white/10 focus:border-blue-500/40 focus:ring-8 focus:ring-blue-500/[0.03] transition-all duration-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-end px-1">
+                  <label className="text-[12px] font-black text-gray-500 uppercase tracking-widest leading-none">Email</label>
+                  <span className="text-[10px] text-blue-500/60 font-medium">Zentric account</span>
+                </div>
+                <div className="relative group">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center text-gray-600 group-focus-within:text-blue-500 transition-colors pointer-events-none duration-300">
+                    <Fingerprint className="w-[18px] h-[18px]" />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    required
+                    className="w-full bg-black/40 border border-white/5 rounded-[22px] pl-14 pr-6 py-4.5 text-white placeholder-gray-700 text-[15px] outline-none hover:border-white/10 focus:border-blue-500/40 focus:ring-8 focus:ring-blue-500/[0.03] transition-all duration-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[12px] font-black text-gray-500 uppercase tracking-widest leading-none">Password</label>
+                  <button
+                    type="button"
+                    className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors font-bold uppercase tracking-wider"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center text-gray-600 group-focus-within:text-blue-500 transition-colors pointer-events-none duration-300">
+                    <Lock className="w-[18px] h-[18px]" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Minimum 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-[22px] pl-14 pr-14 py-4.5 text-white placeholder-gray-700 text-[15px] outline-none hover:border-white/10 focus:border-blue-500/40 focus:ring-8 focus:ring-blue-500/[0.03] transition-all duration-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors duration-300"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5 flex-shrink-0" /> : <Eye className="w-5 h-5 flex-shrink-0" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center pt-2">
+                <label
+                  className="flex items-center gap-4 cursor-pointer group"
+                  onClick={() => setKeepSignedIn(!keepSignedIn)}
+                >
+                  <div
+                    className={`w-6 h-6 rounded-xl border-2 flex items-center justify-center transition-all duration-500 ${
+                      keepSignedIn
+                        ? "bg-blue-600 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.35)]"
+                        : "bg-white/5 border-white/10 group-hover:border-blue-500/40"
+                    }`}
+                  >
+                    {keepSignedIn && <Check className="w-3.5 h-3.5 text-white stroke-[4px]" />}
+                  </div>
+                  <span className="text-[13px] text-gray-500 font-bold select-none group-hover:text-gray-300 transition-colors duration-300 tracking-tight">
+                    Remember for 30 days
+                  </span>
+                </label>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[13px] font-bold rounded-2xl px-5 py-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full group relative overflow-hidden mt-6 py-5 rounded-[24px] bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white font-black text-[15px] uppercase tracking-widest transition-all duration-500 shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(59,130,246,0.6)] hover:-translate-y-1 active:translate-y-0 disabled:opacity-70 disabled:grayscale disabled:translate-y-0"
+              >
+                <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                <span className="relative z-10 flex items-center justify-center gap-3">
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      {authMode === "signup" ? "Create Account" : "Sign In"}
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-500" />
+                    </>
+                  )}
+                </span>
+              </button>
+            </form>
+
+            <div className="mt-12 pt-8 border-t border-white/5 text-center">
+              <p className="text-[14px] text-gray-500 font-bold tracking-tight">
+                {authMode === "signup" ? "Already have an account?" : "Don't have an account?"}{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode((current) => (current === "signup" ? "signin" : "signup"));
+                    setError("");
+                    setLoading(false);
+                  }}
+                  className="text-white hover:text-blue-400 font-black transition-colors duration-300 underline underline-offset-[6px] decoration-blue-500/30"
+                >
+                  {authMode === "signup" ? "Sign in" : "Create one free"}
+                </button>
+              </p>
+            </div>
           </div>
-        </section>
+
+          <div className="flex items-center justify-center gap-3 mt-12 py-4 grayscale opacity-20 hover:grayscale-0 hover:opacity-100 transition-all duration-700 cursor-default">
+            <Zap className="w-5 h-5 text-gray-400" />
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.5em]">System.Zentric</span>
+          </div>
+        </div>
       </div>
-    </main>
+
+      <style jsx global>{`
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .animate-shimmer {
+          background-size: 200% auto;
+          animation: shimmer 8s linear infinite;
+        }
+        @font-face {
+          font-family: 'Inter';
+          font-display: swap;
+          src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        }
+        body {
+          font-family: 'Inter', sans-serif;
+          -webkit-font-smoothing: antialiased;
+        }
+        input::placeholder {
+          font-weight: 700;
+          letter-spacing: -0.02em;
+        }
+      `}</style>
+    </div>
   );
 }
