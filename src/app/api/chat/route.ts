@@ -5,7 +5,7 @@ import { buildAICoachSnapshot, recordCoachEvent } from "@/lib/ai-coach";
 import Groq from "groq-sdk";
 import OpenAI from "openai";
 
-const SYSTEM_PROMPT = `You are Zentric AI, a helpful assistant integrated into the Zentric AI Growth Operating System.
+const SYSTEM_PROMPT = `You are Ask Zentric, a general-purpose AI chatbot inside Zentric.
 You help students, developers, and professionals with:
 - Task planning and productivity
 - DSA problems and coding practice
@@ -13,6 +13,8 @@ You help students, developers, and professionals with:
 - Career development and interview preparation
 - Research and information gathering
 - Code review and debugging
+
+Behave like an independent chatbot. Do not mention the user's Zentric goal, roadmap, planner, AI Coach, or progress unless the user directly provides that information in the chat or explicit Zentric context is included in the system prompt.
 
 Be concise, practical, and encouraging. Format responses with markdown when helpful.`;
 
@@ -64,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { conversationId, message } = body;
+  const { conversationId, message, useZentricContext } = body;
 
   if (!conversationId || !message?.trim()) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
@@ -96,29 +98,33 @@ export async function POST(req: NextRequest) {
       content: m.content,
     }));
 
-    const coach = await buildAICoachSnapshot(session.user.id);
-    const dailyRoadmap = coach.dailyPlan.map((item) => `${item.title} (${item.duration}, ${item.priority})`);
-    const coachContext = `\n\nCurrent Zentric AI Coach context:
+    let zentricContext = "";
+
+    if (useZentricContext === true) {
+      const coach = await buildAICoachSnapshot(session.user.id);
+      const dailyRoadmap = coach.dailyPlan.map((item) => `${item.title} (${item.duration}, ${item.priority})`);
+      zentricContext = `\n\nOptional Zentric context enabled by the user for this message:
 - User: ${coach.user.name}
 - Career goal: ${coach.memory.careerGoal} at ${coach.memory.dreamCompany}
 - Growth score: ${coach.metrics.growthScore}%
 - Strongest area: ${coach.metrics.strongestArea.label} (${coach.metrics.strongestArea.value}%)
 - Weakest area: ${coach.metrics.weakestArea.label} (${coach.metrics.weakestArea.value}%)
 - Today's roadmap plan: ${dailyRoadmap.length ? dailyRoadmap.join("; ") : "No daily roadmap topics yet"}
-- Planner logic: deadline, daily study minutes, weak topics, and visited roadmap topics decide today's routine.
+- Planner logic: deadline, weak topics, visited roadmap topics, and progress decide today's routine.
 
-Use this context naturally. You are Ask Zentric, the conversational surface of the AI Coach. Do not pretend to have data outside this context.`;
+Use this context only when it improves the answer. If the user's question is general, answer normally and do not force the goal into the response.`;
 
-    await recordCoachEvent(session.user.id, {
-      type: "ask_zentric_message",
-      module: "Ask Zentric",
-      title: "Asked Zentric a question",
-      detail: message.trim().slice(0, 160),
-      impact: 1,
-    });
+      await recordCoachEvent(session.user.id, {
+        type: "ask_zentric_context_message",
+        module: "Ask Zentric",
+        title: "Asked Zentric with Coach context",
+        detail: message.trim().slice(0, 160),
+        impact: 1,
+      });
+    }
 
     const aiStream = createAIResponse([
-        { role: "system", content: `${conversation.systemPrompt ?? SYSTEM_PROMPT}${coachContext}` },
+        { role: "system", content: `${conversation.systemPrompt ?? SYSTEM_PROMPT}${zentricContext}` },
         ...history,
         { role: "user", content: message.trim() },
     ]);

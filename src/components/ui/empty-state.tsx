@@ -22,17 +22,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[1.35rem] border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent p-8 text-center",
+        "relative overflow-hidden rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-8 text-center shadow-sm shadow-blue-100/60",
         className,
       )}
     >
-      <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 left-8 h-44 w-44 rounded-full bg-purple-500/10 blur-3xl" />
-      <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] shadow-lg shadow-purple-500/10">
-        <Icon className="h-7 w-7 text-purple-200" />
+      <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D6E4F5] bg-[#EEF4FF]">
+        <Icon className="h-7 w-7 text-blue-600" />
       </div>
-      <h3 className="relative text-lg font-semibold text-white">{title}</h3>
-      <p className="relative mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-400">{description}</p>
+      <h3 className="relative text-lg font-semibold text-[#172033]">{title}</h3>
+      <p className="relative mx-auto mt-2 max-w-xl text-sm leading-6 text-[#667085]">{description}</p>
       {(action || secondary) && (
         <div className="relative mt-5 flex flex-wrap items-center justify-center gap-3">
           {action}

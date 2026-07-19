@@ -326,47 +326,47 @@ const executionTests: Record<string, Array<{ stdin: string; expectedOutput: stri
 function challengePattern(challenge: Challenge) {
   if (challenge.pattern) return challenge.pattern;
   const topicPatterns: Record<string, string> = {
-    Arrays: "array traversal / prefix technique",
-    Strings: "frequency map / two pointers",
-    "Linked Lists": "slow-fast pointers / pointer simulation",
-    Stacks: "stack simulation / monotonic stack",
-    Trees: "DFS/BFS traversal",
-    "Binary Search": "search space reduction",
-    "Dynamic Programming": "state transition",
-    Graphs: "BFS/DFS graph traversal",
-    "Sorting Algorithms": "sorting + greedy/order reasoning",
-    "Recursion & Backtracking": "choice tree recursion",
-    Heaps: "priority queue / top-k",
-    "Hash Maps": "hashing / complement lookup",
-    Tries: "prefix tree",
-    "Sliding Window": "window expand-shrink",
-    "Two Pointers": "opposite or write pointers",
+    Arrays: "Move through the array once and keep the values you need as you go.",
+    Strings: "Track characters carefully using counts, two pointers, or a small lookup.",
+    "Linked Lists": "Move pointers step by step and avoid losing the next node.",
+    Stacks: "Use a stack when the latest unfinished item should be handled first.",
+    Trees: "Visit nodes using DFS or BFS depending on the order the problem needs.",
+    "Binary Search": "Reduce the search range again and again until only the answer remains.",
+    "Dynamic Programming": "Break the problem into states and reuse already-computed answers.",
+    Graphs: "Treat items as nodes and connections, then explore with BFS or DFS.",
+    "Sorting Algorithms": "Sort first when order can make the decision easier.",
+    "Recursion & Backtracking": "Try choices one by one, then undo and explore the next choice.",
+    Heaps: "Use a priority queue when you repeatedly need the smallest, largest, or top-k values.",
+    "Hash Maps": "Store quick lookups so you do not scan the same data again.",
+    Tries: "Store words by prefix when repeated prefix checks are important.",
+    "Sliding Window": "Grow and shrink a window while keeping the current answer updated.",
+    "Two Pointers": "Use two positions to compare, merge, or narrow the answer efficiently.",
   };
-  return topicPatterns[challenge.topic] ?? "problem solving pattern";
+  return topicPatterns[challenge.topic] ?? "Start with a simple approach, then remove repeated work.";
 }
 
 function challengeComplexity(challenge: Challenge) {
   if (challenge.expectedComplexity) return challenge.expectedComplexity;
   const topicComplexities: Record<string, string> = {
-    Arrays: "Usually O(n) time, O(1)-O(n) space",
-    Strings: "Usually O(n) time, O(1)-O(n) space",
-    "Linked Lists": "Usually O(n) time, O(1) space",
-    Stacks: "Usually O(n) time, O(n) space",
-    Trees: "Usually O(n) time, O(h) or O(n) space",
-    "Binary Search": "Usually O(log n) time, O(1) space",
-    "Dynamic Programming": "Usually O(n) or O(n*m) time depending on state",
-    Graphs: "Usually O(V + E) time",
-    Heaps: "Usually O(n log k) or O(n log n) time",
+    Arrays: "A good solution usually checks each value once, so aim for O(n) time.",
+    Strings: "Try to read the string once and use only the extra memory you really need.",
+    "Linked Lists": "Most solutions walk through the list once with constant extra memory.",
+    Stacks: "Expect one pass through the input while the stack stores pending items.",
+    Trees: "Most solutions visit every node once. Memory depends on tree height or queue size.",
+    "Binary Search": "The target should be found by repeatedly halving the search space.",
+    "Dynamic Programming": "The cost depends on how many states you create and store.",
+    Graphs: "A clean BFS/DFS solution usually visits every node and edge once.",
+    Heaps: "Use heap operations only when priority matters, because each update costs log time.",
   };
-  return topicComplexities[challenge.topic] ?? "Optimize beyond brute force when possible";
+  return topicComplexities[challenge.topic] ?? "Try to avoid brute force if the input can become large.";
 }
 
 function challengeEdgeCases(challenge: Challenge) {
   if (challenge.edgeCases?.length) return challenge.edgeCases;
-  const base = ["empty/minimum input", "duplicates", "negative or boundary values"];
-  if (challenge.topic === "Graphs") return ["disconnected graph", "single node", "cycle or no path"];
-  if (challenge.topic === "Trees") return ["empty/null nodes", "single node", "skewed tree"];
-  if (challenge.topic === "Binary Search") return ["target missing", "first/last position", "one element"];
+  const base = ["minimum or empty input", "duplicate values", "negative or boundary values"];
+  if (challenge.topic === "Graphs") return ["disconnected graph", "single node graph", "cycle or no path"];
+  if (challenge.topic === "Trees") return ["empty tree", "single node", "very skewed tree"];
+  if (challenge.topic === "Binary Search") return ["target not present", "first or last position", "one element"];
   if (challenge.topic === "Dynamic Programming") return ["zero state", "impossible case", "large input"];
   return base;
 }
@@ -756,34 +756,34 @@ export default function CodingHubPage() {
   const lastRunWasFinal = Boolean(results && results.length === fullJudgeTestCount);
 
   return (
-    <main className="mx-auto max-w-[1500px] p-5 lg:p-8">
-      <header className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+    <main className="zentric-page-shell mx-auto max-w-[1500px]">
+      <header className="zentric-human-card mb-7 flex flex-col gap-5 rounded-[1.5rem] p-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#315F8F] to-[#20364F] shadow-lg shadow-blue-200/70">
               <Braces className="size-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Coding Hub</h1>
-              <p className="text-sm text-gray-400">Practice, run, test, and improve without leaving Zentric.</p>
+              <h1 className="text-2xl font-bold text-[#172033]">Coding Hub</h1>
+              <p className="text-sm text-[#667085]">Practice, run, test, and improve without leaving Zentric.</p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 sm:flex">
-          <div className="rounded-xl border border-white/8 bg-white/3 px-4 py-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-gray-600">Solved</p>
-            <p className="mt-0.5 text-sm font-semibold text-white">{completed.length}</p>
+          <div className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 px-4 py-2.5 shadow-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#667085]">Solved</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#172033]">{completed.length}</p>
           </div>
-          <div className="rounded-xl border border-white/8 bg-white/3 px-4 py-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-gray-600">Language</p>
-            <p className="mt-0.5 text-sm font-semibold text-cyan-300">
+          <div className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 px-4 py-2.5 shadow-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#667085]">Language</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#315F8F]">
               {languages[language].label}
             </p>
           </div>
-          <div className="rounded-xl border border-white/8 bg-white/3 px-4 py-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-gray-600">Daily streak</p>
-            <p className="mt-0.5 flex items-center gap-1 text-sm font-semibold text-orange-300">
+          <div className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 px-4 py-2.5 shadow-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#667085]">Daily streak</p>
+            <p className="mt-0.5 flex items-center gap-1 text-sm font-semibold text-orange-700">
               <Flame className="size-3.5" /> {completed.length ? 1 : 0}
             </p>
           </div>
@@ -793,23 +793,23 @@ export default function CodingHubPage() {
       <section className="mb-5 grid gap-4 lg:grid-cols-[1fr_auto]">
         <button
           onClick={() => chooseChallenge(daily)}
-          className="group flex items-center gap-4 rounded-2xl border border-orange-500/20 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent p-4 text-left transition hover:border-orange-400/35"
+          className="group flex items-center gap-4 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 via-amber-50 to-[#FFFDF9] p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300"
         >
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-300">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
             <Trophy className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-orange-300">Daily challenge</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-orange-700">Daily challenge</span>
               <Badge className={`border ${difficultyStyles[daily.difficulty]}`}>{daily.difficulty}</Badge>
             </div>
-            <p className="font-medium text-white">{daily.title}</p>
-            <p className="truncate text-xs text-gray-500">{daily.description}</p>
+            <p className="font-medium text-[#172033]">{daily.title}</p>
+            <p className="truncate text-xs text-[#667085]">{daily.description}</p>
           </div>
-          <ChevronRight className="size-5 text-gray-600 transition group-hover:translate-x-1 group-hover:text-orange-300" />
+          <ChevronRight className="size-5 text-[#8A98A8] transition group-hover:translate-x-1 group-hover:text-orange-700" />
         </button>
 
-        <div className="flex flex-col gap-2 rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] p-4 sm:flex-row lg:min-w-[470px]">
+        <div className="zentric-panel flex flex-col gap-2 rounded-2xl p-4 sm:flex-row lg:min-w-[470px]">
           <Select value={topic} onValueChange={setTopic}>
             <SelectTrigger className="min-w-[165px]">
               <SelectValue placeholder="Topic" />
@@ -833,7 +833,7 @@ export default function CodingHubPage() {
           <Button
             onClick={generateChallenge}
             disabled={generating}
-            className="flex-1 border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+            className="zentric-primary-action flex-1"
           >
             {generating ? <Loader2 className="mr-2 size-4 animate-spin" /> : <WandSparkles className="mr-2 size-4" />}
             Generate with AI
@@ -860,8 +860,8 @@ export default function CodingHubPage() {
       <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold text-white">Topic practice</h2>
-            <span className="text-xs text-gray-600">{filteredChallenges.length} challenges</span>
+            <h2 className="text-sm font-semibold text-[#172033]">Topic practice</h2>
+            <span className="text-xs font-medium text-[#667085]">{filteredChallenges.length} challenges</span>
           </div>
           <div className="space-y-2">
             {filteredChallenges.map((challenge) => {
@@ -873,14 +873,16 @@ export default function CodingHubPage() {
                   onClick={() => chooseChallenge(challenge)}
                   className={`w-full rounded-xl border p-3 text-left transition ${
                     isSelected
-                      ? "border-cyan-500/30 bg-cyan-500/10"
-                      : "border-white/8 bg-white/[0.025] hover:border-white/15 hover:bg-white/[0.045]"
+                      ? "border-[#84B8D8] bg-[#EAF6FF] shadow-sm shadow-blue-100/70 ring-1 ring-[#B9DDF2]"
+                      : "border-[#D6E4F5] bg-[#FFFDF9] hover:border-[#AFCBE3] hover:bg-[#F4FAFF] hover:shadow-sm"
                   }`}
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-xs text-gray-500">{challenge.topic}</span>
+                    <span className={`text-xs font-medium ${isSelected ? "text-[#315F8F]" : "text-[#667085]"}`}>
+                      {challenge.topic}
+                    </span>
                     {isCompleted ? (
-                      <span className="flex size-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
+                      <span className="flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                         <Check className="size-3" />
                       </span>
                     ) : (
@@ -889,8 +891,8 @@ export default function CodingHubPage() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm font-medium text-gray-200">{challenge.title}</p>
-                  <p className="mt-1 flex items-center gap-1 text-[11px] text-gray-600">
+                  <p className="text-sm font-semibold text-[#172033]">{challenge.title}</p>
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-[#667085]">
                     <Clock3 className="size-3" /> {challenge.estimatedMinutes} min
                   </p>
                 </button>
@@ -900,8 +902,8 @@ export default function CodingHubPage() {
         </aside>
 
         <section className="grid min-w-0 gap-5 2xl:grid-cols-[minmax(360px,0.85fr)_minmax(520px,1.15fr)]">
-          <Card className="border-white/8 bg-white/[0.025]">
-            <CardHeader className="border-b border-white/8">
+          <Card className="border-[#D6E4F5] bg-[#FFFDF9]">
+            <CardHeader className="border-b border-[#D6E4F5]">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Badge className={`border ${difficultyStyles[selected.difficulty]}`}>{selected.difficulty}</Badge>
                 <Badge variant="outline" className="border-white/10 text-gray-400">{selected.topic}</Badge>
@@ -916,45 +918,45 @@ export default function CodingHubPage() {
                   </Badge>
                 )}
               </div>
-              <CardTitle className="text-xl text-white">{selected.title}</CardTitle>
+              <CardTitle className="text-xl text-[#172033]">{selected.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-5">
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Problem</h3>
-                <p className="text-sm leading-6 text-gray-300">{selected.description}</p>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#667085]">Problem</h3>
+                <p className="text-sm leading-6 text-[#314154]">{selected.description}</p>
               </div>
 
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-xl border border-purple-500/15 bg-purple-500/[0.05] p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-purple-300">Pattern</p>
-                  <p className="mt-1 text-xs leading-5 text-gray-300">{challengePattern(selected)}</p>
+                <div className="rounded-xl border border-[#C9DDF4] bg-[#EEF6FF] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#315F8F]">How to think about it</p>
+                  <p className="mt-1 text-xs leading-5 text-[#314154]">{challengePattern(selected)}</p>
                 </div>
-                <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.05] p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-blue-300">Expected Complexity</p>
-                  <p className="mt-1 text-xs leading-5 text-gray-300">{challengeComplexity(selected)}</p>
+                <div className="rounded-xl border border-[#C9DDF4] bg-[#F4F8FD] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#315F8F]">Expected running cost</p>
+                  <p className="mt-1 text-xs leading-5 text-[#314154]">{challengeComplexity(selected)}</p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.05] p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-emerald-300">Edge Cases</p>
-                  <p className="mt-1 text-xs leading-5 text-gray-300">{challengeEdgeCases(selected).join(", ")}</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Be careful about</p>
+                  <p className="mt-1 text-xs leading-5 text-[#314154]">{challengeEdgeCases(selected).join(", ")}</p>
                 </div>
               </div>
 
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Example</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#667085]">Example</h3>
                 {selected.examples.map((example, index) => (
-                  <div key={`${example.input}-${index}`} className="rounded-xl border border-white/8 bg-black/25 p-3 font-mono text-xs">
-                    <p><span className="text-gray-600">Input: </span><span className="text-cyan-300">{example.input}</span></p>
-                    <p className="mt-1"><span className="text-gray-600">Output: </span><span className="text-emerald-300">{example.output}</span></p>
+                  <div key={`${example.input}-${index}`} className="rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3 font-mono text-xs">
+                    <p><span className="text-[#667085]">Input: </span><span className="text-[#0F6B8D]">{example.input}</span></p>
+                    <p className="mt-1"><span className="text-[#667085]">Output: </span><span className="text-emerald-700">{example.output}</span></p>
                   </div>
                 ))}
               </div>
 
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Constraints</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#667085]">Constraints</h3>
                 <ul className="space-y-2">
                   {selected.constraints.map((constraint) => (
-                    <li key={constraint} className="flex gap-2 text-xs leading-5 text-gray-400">
-                      <Target className="mt-0.5 size-3.5 shrink-0 text-blue-400" />
+                    <li key={constraint} className="flex gap-2 text-xs leading-5 text-[#536578]">
+                      <Target className="mt-0.5 size-3.5 shrink-0 text-[#315F8F]" />
                       {constraint}
                     </li>
                   ))}
@@ -962,24 +964,24 @@ export default function CodingHubPage() {
               </div>
 
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Input and output
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#667085]">
+                  How input and output should look
                 </h3>
-                <p className="rounded-xl border border-cyan-500/15 bg-cyan-500/[0.05] p-3 text-xs leading-5 text-cyan-100/75">
+                <p className="rounded-xl border border-[#C9DDF4] bg-[#EEF6FF] p-3 text-xs leading-5 text-[#314154]">
                   {inputGuide(selected)}
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500">Sample run</p>
-                  <p className="mt-1 text-sm font-semibold text-white">{visibleTestCount} visible tests</p>
-                  <p className="mt-1 text-xs text-gray-500">Use this while building your approach.</p>
+                <div className="rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#667085]">Practice check</p>
+                  <p className="mt-1 text-sm font-semibold text-[#172033]">{visibleTestCount} visible tests</p>
+                  <p className="mt-1 text-xs text-[#667085]">Use this while building your approach.</p>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500">Final judge</p>
-                  <p className="mt-1 text-sm font-semibold text-white">{fullJudgeTestCount} total tests</p>
-                  <p className="mt-1 text-xs text-gray-500">Submit final to count this as solved.</p>
+                <div className="rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#667085]">Final check</p>
+                  <p className="mt-1 text-sm font-semibold text-[#172033]">{fullJudgeTestCount} total tests</p>
+                  <p className="mt-1 text-xs text-[#667085]">Submit final to count this as solved.</p>
                 </div>
               </div>
 

@@ -209,18 +209,18 @@ export default function StudyPage() {
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="zentric-page-shell mx-auto max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="zentric-human-card mb-8 flex items-center justify-between rounded-[1.5rem] p-5">
         <div>
-          <h1 className="text-2xl font-bold text-white">Study Tracker</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-[#172033]">Study Tracker</h1>
+          <p className="mt-1 text-sm text-[#667085]">
             Track topic mastery, revision status, and assigned questions. Solve them inside Coding Hub.
           </p>
         </div>
         <Button
           onClick={() => setShowAdd(true)}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0"
+          className="zentric-primary-action"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Topic
@@ -235,9 +235,9 @@ export default function StudyPage() {
           { label: "In Progress", value: stats.inProgress, color: "text-blue-400" },
           { label: "Need Attention", value: attentionTopics, color: "text-yellow-300" },
         ].map((s) => (
-          <div key={s.label} className="p-4 rounded-xl bg-white/3 border border-white/8 text-center">
+          <div key={s.label} className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 p-4 text-center shadow-sm">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-xs text-gray-500">{s.label}</div>
+            <div className="text-xs text-[#667085]">{s.label}</div>
           </div>
         ))}
       </div>
@@ -246,11 +246,11 @@ export default function StudyPage() {
       <Card className="mb-6">
         <CardContent className="p-5">
           <div className="flex items-center gap-4">
-            <BarChart3 className="w-5 h-5 text-purple-400 flex-shrink-0" />
+            <BarChart3 className="w-5 h-5 text-[#315F8F] flex-shrink-0" />
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-300">Topic Mastery Progress</span>
-                <span className="text-purple-400 font-medium">{completionRate}%</span>
+                <span className="text-[#667085]">Topic Mastery Progress</span>
+                <span className="font-medium text-[#315F8F]">{completionRate}%</span>
               </div>
               <Progress value={completionRate} />
             </div>
@@ -262,7 +262,7 @@ export default function StudyPage() {
       {dsaNotAdded.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Quick Add DSA Topics</CardTitle>
+            <CardTitle className="text-sm text-[#172033]">Quick Add DSA Topics</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -270,7 +270,7 @@ export default function StudyPage() {
                 <button
                   key={name}
                   onClick={() => addDSATopic(name)}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                  className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-700 transition-colors hover:bg-blue-100"
                 >
                   + {name}
                 </button>
@@ -282,7 +282,7 @@ export default function StudyPage() {
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <Filter className="w-4 h-4 text-gray-500" />
+        <Filter className="w-4 h-4 text-[#667085]" />
         <div className="flex gap-1">
           {categories.map((cat) => (
             <button
@@ -290,8 +290,8 @@ export default function StudyPage() {
               onClick={() => setCategoryFilter(cat)}
               className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all ${
                 categoryFilter === cat
-                  ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                  : "text-gray-500 hover:text-white hover:bg-white/5"
+                  ? "zentric-soft-active"
+                  : "text-[#667085] hover:bg-[#F4F8FC] hover:text-[#172033]"
               }`}
             >
               {cat}
@@ -305,8 +305,8 @@ export default function StudyPage() {
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                 statusFilter === s
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                  : "text-gray-500 hover:text-white hover:bg-white/5"
+                  ? "zentric-soft-active"
+                  : "text-[#667085] hover:bg-[#F4F8FC] hover:text-[#172033]"
               }`}
             >
               {s === "all" ? "All" : s.replace("_", " ")}
@@ -330,13 +330,13 @@ export default function StudyPage() {
               : "Try another status filter or add a fresh topic for your current goal."
           }
           action={
-            <Button onClick={() => setShowAdd(true)} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+            <Button onClick={() => setShowAdd(true)} className="zentric-primary-action">
               <Plus className="w-4 h-4" />
               Add study topic
             </Button>
           }
           secondary={
-            <Button asChild variant="outline" className="border-blue-400/30 text-blue-100">
+            <Button asChild variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
               <Link href="/ai-coach">
                 Generate roadmap
                 <ChevronRight className="w-4 h-4" />
@@ -358,11 +358,11 @@ export default function StudyPage() {
             return (
               <div
                 key={topic.id}
-                className="group p-4 rounded-xl bg-white/3 border border-white/8 hover:border-white/15 transition-all"
+                className="group rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#B8CCE2] hover:bg-[#F4F8FC]"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="text-sm font-medium text-white mb-1">{topic.name}</h3>
+                    <h3 className="mb-1 text-sm font-semibold text-[#172033]">{topic.name}</h3>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs">{topic.category}</Badge>
                       <Badge
@@ -379,24 +379,24 @@ export default function StudyPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-6 h-6 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
+                    className="h-7 w-7 text-[#667085] opacity-0 hover:text-red-600 group-hover:opacity-100"
                     onClick={() => deleteTopic(topic.id)}
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
                 {topic.notes && (
-                  <p className="text-xs text-gray-500 mb-3 line-clamp-2">{topic.notes}</p>
+                  <p className="mb-3 line-clamp-2 text-xs text-[#667085]">{topic.notes}</p>
                 )}
-                <div className="mb-3 rounded-lg border border-white/8 bg-black/20 p-3">
+                <div className="mb-3 rounded-2xl border border-[#D9E3EE] bg-[#F4F8FC] p-3">
                   <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Mastery progress</span>
-                    <span className="font-semibold text-white">
+                    <span className="text-[#667085]">Mastery progress</span>
+                    <span className="font-semibold text-[#172033]">
                       {completedCount}/{totalQuestions}
                     </span>
                   </div>
                   <Progress value={progressPercent} />
-                  <p className="mt-2 text-[11px] text-gray-500">
+                  <p className="mt-2 text-[11px] text-[#667085]">
                     {nextQuestion ? `Next: ${nextQuestion.title}` : "Load the path to start practicing."}
                   </p>
                 </div>
@@ -409,7 +409,7 @@ export default function StudyPage() {
                   </div>
                   <div className="flex gap-2">
                     {nextQuestion && (
-                      <Button asChild size="sm" className="h-8 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-xs text-white">
+                      <Button asChild size="sm" className="h-8 rounded-xl text-xs">
                         <Link href={nextHref}>
                           <Code2 className="mr-1.5 h-3 w-3" />
                           Practice Next
@@ -421,7 +421,7 @@ export default function StudyPage() {
                       variant="ghost"
                       onClick={() => openPractice(topic.id)}
                       disabled={practiceLoading === topic.id}
-                      className="h-8 rounded-lg text-xs text-blue-300 hover:bg-blue-500/10"
+                      className="h-8 rounded-xl text-xs text-[#315F8F] hover:bg-[#EEF4FF]"
                     >
                       {practiceLoading === topic.id ? (
                         <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -439,23 +439,23 @@ export default function StudyPage() {
       )}
 
       {selectedPractice && (
-        <Card className="mt-6 overflow-hidden border-blue-500/20 bg-blue-500/[0.035]">
-          <CardHeader className="border-b border-white/8 pb-4">
+        <Card className="zentric-human-card mt-6 overflow-hidden">
+          <CardHeader className="border-b border-[#D9E3EE] pb-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Code2 className="h-5 w-5 text-blue-300" />
+                <CardTitle className="flex items-center gap-2 text-[#172033]">
+                  <Code2 className="h-5 w-5 text-[#315F8F]" />
                   {selectedPractice.topic.name} Mastery Path
                 </CardTitle>
-                <p className="mt-2 text-sm text-gray-400">
+                <p className="mt-2 text-sm text-[#667085]">
                   Study Tracker tracks this path. Coding Hub is where you solve, run tests, submit, and update progress.
                 </p>
               </div>
               <div className="flex flex-col gap-3 md:min-w-[280px]">
-                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="rounded-2xl border border-[#D9E3EE] bg-[#F4F8FC] p-3">
                   <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Topic completion</span>
-                    <span className="font-semibold text-white">
+                    <span className="text-[#667085]">Topic completion</span>
+                    <span className="font-semibold text-[#172033]">
                       {selectedPractice.completedCount}/{selectedPractice.totalQuestions}
                     </span>
                   </div>
@@ -464,7 +464,7 @@ export default function StudyPage() {
                 {(() => {
                   const nextQuestion = selectedPractice.questions.find((question) => !question.completed) ?? selectedPractice.questions[0];
                   return nextQuestion ? (
-                    <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                    <Button asChild className="zentric-primary-action">
                       <Link href={codingHubHref(selectedPractice.topic.id, selectedPractice.topic.name, nextQuestion.id)}>
                         <Code2 className="h-4 w-4" />
                         Practice next in Coding Hub
@@ -488,20 +488,20 @@ export default function StudyPage() {
                   <Link
                     key={question.id}
                     href={href}
-                    className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3 transition hover:-translate-y-0.5 hover:border-blue-400/35 hover:bg-blue-500/[0.06]"
+                    className="group flex items-center gap-3 rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 p-3 transition hover:-translate-y-0.5 hover:border-[#B8CCE2] hover:bg-[#F4F8FC]"
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                         question.completed
-                          ? "bg-emerald-500/15 text-emerald-300"
-                          : "bg-white/8 text-gray-300"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-[#EEF4FF] text-[#315F8F]"
                       }`}
                     >
                       {question.completed ? <Check className="h-4 w-4" /> : index + 1}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-medium text-white">
+                        <p className="truncate text-sm font-medium text-[#172033]">
                           {question.title}
                         </p>
                         <Badge
@@ -521,7 +521,7 @@ export default function StudyPage() {
                         {question.estimatedMinutes} min • opens in Coding Hub
                       </p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-600 transition group-hover:translate-x-1 group-hover:text-blue-300" />
+                    <ChevronRight className="h-4 w-4 text-[#8A98A8] transition group-hover:translate-x-1 group-hover:text-[#315F8F]" />
                   </Link>
                 );
               })}
@@ -594,7 +594,7 @@ export default function StudyPage() {
             <Button
               onClick={handleAdd}
               disabled={submitting || !form.name.trim()}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 border-0"
+              className="zentric-primary-action"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-2" />Add Topic</>}
             </Button>

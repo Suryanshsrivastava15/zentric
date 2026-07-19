@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -616,16 +616,16 @@ export default function PlannerPage() {
   };
 
   return (
-    <main className="mx-auto max-w-7xl p-5 lg:p-8">
-      <section className="mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-purple-500/15 via-blue-500/10 to-white/[0.02] p-6">
+    <main className="zentric-page-shell mx-auto max-w-7xl">
+      <section className="mb-6 overflow-hidden rounded-[1.75rem] zentric-human-card p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <Badge className="mb-4 border-purple-400/30 bg-purple-500/10 text-purple-100">
+            <Badge className="mb-4 border-purple-400/30 bg-purple-500/10 text-[#315F8F]">
               <BrainCircuit className="mr-1 h-3 w-3" />
               AI Execution Planner
             </Badge>
-            <h1 className="text-3xl font-bold text-white">Planner</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+            <h1 className="text-3xl font-bold text-[#172033]">Planner</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#667085]">
               Turn your AI Coach roadmap into focused tasks, optional reminders, and daily execution.
               The routine adapts to your selected goal, deadline, weak topics, and available study time.
             </p>
@@ -640,7 +640,7 @@ export default function PlannerPage() {
       </section>
 
       {plannerMessage && (
-        <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="mb-5 rounded-2xl border border-[#BFD9C8] bg-[#F0F8F3] px-4 py-3 text-sm text-[#28714D]">
           {plannerMessage}
         </div>
       )}
@@ -649,16 +649,16 @@ export default function PlannerPage() {
         <Card className="border-blue-400/20 bg-blue-500/[0.04]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-blue-300" />
+              <Target className="h-5 w-5 text-[#315F8F]" />
               Today&apos;s AI Mission
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-xl font-bold text-[#172033]">
                 {coach ? `Day ${dayNumber}: ${coach.dailyMission?.mission ?? `${coach.memory.careerGoal} at ${coach.memory.dreamCompany}`}` : "Set your AI Coach memory to generate a roadmap routine."}
               </p>
-              <p className="mt-2 text-sm leading-6 text-gray-400">
+              <p className="mt-2 text-sm leading-6 text-[#667085]">
                 {coach ? coach.dailyMission?.why ?? "Planner uses your goal, deadline, daily study minutes, weak topics, and visited roadmap topics to decide what to do today." : "Planner will use your target role, weak topics, deadline, and progress to decide what matters today."}
               </p>
             </div>
@@ -668,11 +668,11 @@ export default function PlannerPage() {
               <MiniStat icon={Repeat2} label="Revision Due" value={`${revisionDueCount} topics`} />
               <MiniStat icon={Flag} label="Weak Focus" value={coach?.memory.weakTopics ?? "Not set"} />
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">Planner sync status</p>
-                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                  <p className="text-sm font-semibold text-[#172033]">Planner sync status</p>
+                  <p className="mt-1 text-xs leading-5 text-[#667085]">
                     {syncedMissionTasks.length}/{dailyPlan.length} roadmap tasks synced
                     {syncedRevisionTasks.length ? ` · ${syncedRevisionTasks.length} revision tasks synced` : ""}.
                     Completing a synced task updates AI Coach and today&apos;s progress.
@@ -681,7 +681,7 @@ export default function PlannerPage() {
                 <Button
                   onClick={syncDailyMissionToTasks}
                   disabled={syncingMission || dailyPlan.length === 0}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                  className="zentric-primary-action text-white"
                 >
                   {syncingMission ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   Sync Today&apos;s Mission
@@ -689,15 +689,15 @@ export default function PlannerPage() {
               </div>
             </div>
             {coach?.dailyMission?.tasks?.length ? (
-              <div className="rounded-2xl border border-purple-400/20 bg-purple-400/10 p-4">
-                <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-purple-100">
+              <div className="rounded-2xl border border-[#D6E4F5] bg-[#F4EFFF] p-4">
+                <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#315F8F]">
                   <BookOpen className="h-4 w-4" />
                   Mission Checklist
                 </p>
                 <div className="grid gap-2 md:grid-cols-2">
                   {coach.dailyMission.tasks.map((task) => (
-                    <div key={task} className="flex gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-gray-200">
-                      <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-300" />
+                    <div key={task} className="flex gap-2 rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3 text-sm text-[#344054]">
+                      <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#28714D]" />
                       {task}
                     </div>
                   ))}
@@ -706,45 +706,45 @@ export default function PlannerPage() {
             ) : null}
             <div className="space-y-3">
               {(coach?.dailyPlan ?? []).length === 0 ? (
-                <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-gray-500">
+                <p className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-4 text-sm text-[#667085]">
                   Open AI Coach and save your accuracy setup to generate a personalized execution plan.
                 </p>
               ) : (coach?.dailyPlan ?? []).map((item) => (
-                <div key={item.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div key={item.id} className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="border-blue-400/30 bg-blue-400/10 text-blue-100">Day {item.day}</Badge>
-                        <Badge className={item.mastered ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-yellow-400/30 bg-yellow-400/10 text-yellow-100"}>
+                        <Badge className="border-blue-400/30 bg-blue-400/10 text-[#315F8F]">Day {item.day}</Badge>
+                        <Badge className={item.mastered ? "border-emerald-400/30 bg-emerald-400/10 text-[#28714D]" : "border-yellow-400/30 bg-yellow-400/10 text-[#7A5B00]"}>
                           {item.mastered ? "completed" : "visit to complete"}
                         </Badge>
                         {syncedMissionIds.has(item.id) && (
-                          <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+                          <Badge className="border-emerald-400/30 bg-emerald-400/10 text-[#28714D]">
                             synced to tasks
                           </Badge>
                         )}
-                        <span className="text-xs text-gray-500">{item.time} · {item.duration} · {item.priority}</span>
+                        <span className="text-xs text-[#667085]">{item.time} · {item.duration} · {item.priority}</span>
                       </div>
-                      <p className="mt-2 font-medium text-white">{item.title}</p>
-                      <p className="mt-1 text-xs text-gray-500">{item.phase} · {item.recapPrompt}</p>
+                      <p className="mt-2 font-medium text-[#172033]">{item.title}</p>
+                      <p className="mt-1 text-xs text-[#667085]">{item.phase} · {item.recapPrompt}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button asChild size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                      <Button asChild size="sm" className="zentric-primary-action text-white">
                         <Link href={`/learning-mode?topic=${item.id}`}>
                           <GraduationCap className="h-4 w-4" />
                           Start Session
                         </Link>
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => createRoadmapTask(item.title, item.priority.toLowerCase())} className="border-purple-400/30 text-purple-100">
+                      <Button size="sm" variant="outline" onClick={() => createRoadmapTask(item.title, item.priority.toLowerCase())} className="border-purple-400/30 text-[#315F8F]">
                         <Plus className="h-4 w-4" />
                         Add Task
                       </Button>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div className="mt-4 rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Learning session progress</p>
-                      <span className="text-xs text-blue-200">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">Learning session progress</p>
+                      <span className="text-xs text-[#315F8F]">
                         {item.completedSteps?.length ?? 0}/{learningStepLabels.length} steps
                       </span>
                     </div>
@@ -754,9 +754,9 @@ export default function PlannerPage() {
                         return (
                           <span
                             key={step.id}
-                            className={done ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200" : "rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-gray-400"}
+                            className={done ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs text-[#28714D]" : "rounded-full border border-[#D6E4F5] bg-[#FFFDF9] px-3 py-1 text-xs text-[#667085]"}
                           >
-                            {done ? "✓ " : ""}
+                            {done ? "? " : ""}
                             {step.label}
                           </span>
                         );
@@ -764,23 +764,23 @@ export default function PlannerPage() {
                     </div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr]">
-                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Resources</p>
+                    <div className="rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">Resources</p>
                       <div className="flex flex-wrap gap-2">
-                        <Button size="sm" variant="outline" className="border-red-400/30 text-red-200" onClick={() => visitDailyTopic(item, item.videoUrl)}>
+                        <Button size="sm" variant="outline" className="border-red-400/30 text-[#9B2C2C]" onClick={() => visitDailyTopic(item, item.videoUrl)}>
                           Video
                         </Button>
-                        <Button size="sm" variant="outline" className="border-blue-400/30 text-blue-200" onClick={() => visitDailyTopic(item, item.resourceUrl)}>
+                        <Button size="sm" variant="outline" className="border-blue-400/30 text-[#315F8F]" onClick={() => visitDailyTopic(item, item.resourceUrl)}>
                           Notes
                         </Button>
-                        <Button size="sm" variant="outline" className="border-emerald-400/30 text-emerald-200" onClick={() => visitDailyTopic(item, item.codingUrl)}>
+                        <Button size="sm" variant="outline" className="border-emerald-400/30 text-[#28714D]" onClick={() => visitDailyTopic(item, item.codingUrl)}>
                           Questions
                         </Button>
                       </div>
                     </div>
-                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Practice Questions</p>
-                      <ul className="space-y-1 text-xs leading-5 text-gray-400">
+                    <div className="rounded-xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">Practice Questions</p>
+                      <ul className="space-y-1 text-xs leading-5 text-[#667085]">
                         {item.questions.map((question) => (
                           <li key={question}>• {question}</li>
                         ))}
@@ -791,18 +791,18 @@ export default function PlannerPage() {
               ))}
             </div>
             {coach?.dayRecap && (
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-100">
+              <div className="rounded-2xl border border-[#BFD9C8] bg-[#F0F8F3] p-4 text-sm leading-6 text-[#28714D]">
                 <span className="font-semibold">Day {coach.dayRecap.day} recap:</span> {coach.dayRecap.summary}
               </div>
             )}
             <div className="flex flex-wrap gap-3">
-              <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+              <Button asChild className="zentric-primary-action text-white">
                 <Link href={`/learning-mode${dailyPlan[0]?.id ? `?topic=${dailyPlan[0].id}` : ""}`}>
                   <GraduationCap className="h-4 w-4" />
                   Start Today&apos;s Mission
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="border-purple-400/30 text-purple-100">
+              <Button asChild variant="outline" className="border-purple-400/30 text-[#315F8F]">
                 <Link href="/ai-coach">Tune AI Coach Accuracy</Link>
               </Button>
             </div>
@@ -813,30 +813,30 @@ export default function PlannerPage() {
         <Card className="border-emerald-400/20 bg-emerald-500/[0.03]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Repeat2 className="h-5 w-5 text-emerald-300" />
+              <Repeat2 className="h-5 w-5 text-[#28714D]" />
               Revision Due Today
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {revisionQueue.length === 0 ? (
-              <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-500">
+              <p className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3 text-sm text-[#667085]">
                 Complete a Learning Mode session and Zentric will schedule spaced revision here.
               </p>
             ) : revisionQueue.slice(0, 4).map((item) => (
-              <div key={item.topicId} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <div key={item.topicId} className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-medium text-white">{item.topicTitle}</p>
-                    <p className="text-xs text-gray-500">{item.phase}</p>
+                    <p className="font-medium text-[#172033]">{item.topicTitle}</p>
+                    <p className="text-xs text-[#667085]">{item.phase}</p>
                   </div>
-                  <Badge className={item.due ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-100" : "border-blue-400/30 bg-blue-400/10 text-blue-100"}>
+                  <Badge className={item.due ? "border-yellow-400/30 bg-yellow-400/10 text-[#7A5B00]" : "border-blue-400/30 bg-blue-400/10 text-[#315F8F]"}>
                     {item.due ? "Due" : "Queued"}
                   </Badge>
                 </div>
-                <p className="text-sm leading-6 text-gray-400">{item.reason}</p>
+                <p className="text-sm leading-6 text-[#667085]">{item.reason}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {item.actions.map((action) => (
-                    <span key={action} className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-gray-300">
+                    <span key={action} className="rounded-full border border-[#D6E4F5] bg-[#F8FBFF] px-3 py-1 text-xs text-[#344054]">
                       {action}
                     </span>
                   ))}
@@ -849,28 +849,28 @@ export default function PlannerPage() {
         <Card className="border-purple-400/20 bg-purple-500/[0.04]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {reminders.enabled ? <Bell className="h-5 w-5 text-purple-300" /> : <BellOff className="h-5 w-5 text-gray-500" />}
+              {reminders.enabled ? <Bell className="h-5 w-5 text-[#315F8F]" /> : <BellOff className="h-5 w-5 text-[#667085]" />}
               Reminders & Notifications
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <p className="text-sm leading-6 text-gray-400">
+            <p className="text-sm leading-6 text-[#667085]">
               Reminders are optional. Zentric will only ask for browser notification permission if you enable them.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Status</p>
-                <p className={reminders.enabled ? "mt-2 font-semibold text-emerald-200" : "mt-2 font-semibold text-gray-300"}>
+              <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#667085]">Status</p>
+                <p className={reminders.enabled ? "mt-2 font-semibold text-[#28714D]" : "mt-2 font-semibold text-[#344054]"}>
                   {reminders.enabled ? "Enabled" : "Disabled until you turn it on"}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-[#667085]">
                   {reminders.enabled
                     ? `Browser permission: ${"Notification" in globalThis ? notificationPermission : "unsupported"}`
                     : "Browser permission is not requested while reminders are off."}
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Reminder Time</p>
+              <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#667085]">Reminder Time</p>
                 <Select
                   value={String(reminders.leadMinutes)}
                   onValueChange={(value) => setReminders((current) => ({ ...current, leadMinutes: Number(value) }))}
@@ -890,52 +890,52 @@ export default function PlannerPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               {reminders.enabled ? (
-                <Button variant="outline" className="border-red-400/30 text-red-200" onClick={disableReminders}>
+                <Button variant="outline" className="border-red-400/30 text-[#9B2C2C]" onClick={disableReminders}>
                   <BellOff className="h-4 w-4" />
                   Turn Off Reminders
                 </Button>
               ) : (
-                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white" onClick={enableReminders}>
+                <Button className="zentric-primary-action text-white" onClick={enableReminders}>
                   <Bell className="h-4 w-4" />
                   Enable Reminders
                 </Button>
               )}
             </div>
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">AI mission reminders</p>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">AI mission reminders</p>
               {missionReminderItems.length === 0 ? (
-                <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-500">
+                <p className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3 text-sm text-[#667085]">
                   AI Coach will generate timed mission reminders after your daily plan is ready.
                 </p>
               ) : missionReminderItems.slice(0, 4).map((item) => (
-                <div key={item.item.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <div key={item.item.id} className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-white">{item.item.title}</p>
-                    <Badge className={item.status === "overdue" ? "border-red-400/30 bg-red-400/10 text-red-200" : item.status === "ready" ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-100" : "border-blue-400/30 bg-blue-400/10 text-blue-100"}>
+                    <p className="text-sm font-medium text-[#172033]">{item.item.title}</p>
+                    <Badge className={item.status === "overdue" ? "border-red-400/30 bg-red-400/10 text-[#9B2C2C]" : item.status === "ready" ? "border-yellow-400/30 bg-yellow-400/10 text-[#7A5B00]" : "border-blue-400/30 bg-blue-400/10 text-[#315F8F]"}>
                       {item.status}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-[#667085]">
                     Starts {item.item.time}; reminder {item.reminderAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               ))}
             </div>
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Manual task reminders</p>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">Manual task reminders</p>
               {reminderItems.slice(0, 5).length === 0 ? (
-                <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-gray-500">
+                <p className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3 text-sm text-[#667085]">
                   Add deadlines to tasks to see reminders here.
                 </p>
               ) : reminderItems.slice(0, 5).map((item) => (
-                <div key={item.task.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <div key={item.task.id} className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-white">{item.task.title}</p>
-                    <Badge className={item.status === "overdue" ? "border-red-400/30 bg-red-400/10 text-red-200" : item.status === "ready" ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-100" : "border-blue-400/30 bg-blue-400/10 text-blue-100"}>
+                    <p className="text-sm font-medium text-[#172033]">{item.task.title}</p>
+                    <Badge className={item.status === "overdue" ? "border-red-400/30 bg-red-400/10 text-[#9B2C2C]" : item.status === "ready" ? "border-yellow-400/30 bg-yellow-400/10 text-[#7A5B00]" : "border-blue-400/30 bg-blue-400/10 text-[#315F8F]"}>
                       {item.status}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{getRelativeReminderLabel(item.task, reminders.leadMinutes)}</p>
+                  <p className="mt-1 text-xs text-[#667085]">{getRelativeReminderLabel(item.task, reminders.leadMinutes)}</p>
                 </div>
               ))}
             </div>
@@ -946,22 +946,22 @@ export default function PlannerPage() {
 
       <section className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { label: "Today's Plan", value: `${dailyPlan.length} topics`, detail: `Day ${dayNumber}`, color: "text-blue-200" },
-          { label: "Learning Steps", value: `${completedLearningSteps}/${totalLearningSteps || 0}`, detail: `${todayCompletion}% done`, color: "text-emerald-300" },
-          { label: "Focus Topic", value: focusTopic, detail: nextPhase, color: "text-purple-200" },
-          { label: "Deadline Pressure", value: deadlineDaysLabel, detail: deadlineLabel, color: "text-yellow-200" },
+          { label: "Today's Plan", value: `${dailyPlan.length} topics`, detail: `Day ${dayNumber}`, color: "text-[#315F8F]" },
+          { label: "Learning Steps", value: `${completedLearningSteps}/${totalLearningSteps || 0}`, detail: `${todayCompletion}% done`, color: "text-[#28714D]" },
+          { label: "Focus Topic", value: focusTopic, detail: nextPhase, color: "text-[#315F8F]" },
+          { label: "Deadline Pressure", value: deadlineDaysLabel, detail: deadlineLabel, color: "text-[#7A5B00]" },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-white/8 bg-white/3 p-4">
-            <div className="text-xs uppercase tracking-[0.16em] text-gray-500">{s.label}</div>
+          <div key={s.label} className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+            <div className="text-xs uppercase tracking-[0.16em] text-[#667085]">{s.label}</div>
             <div className={`mt-2 line-clamp-2 text-lg font-bold ${s.color}`}>{s.value}</div>
-            <div className="mt-1 text-xs text-gray-500">{s.detail}</div>
+            <div className="mt-1 text-xs text-[#667085]">{s.detail}</div>
           </div>
         ))}
       </section>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
+          <Filter className="h-4 w-4 text-[#667085]" />
           {["all", "active", "completed"].map((f) => (
             <button
               key={f}
@@ -969,7 +969,7 @@ export default function PlannerPage() {
               className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-all ${
                 filter === f
                   ? "border border-purple-500/30 bg-purple-500/20 text-purple-400"
-                  : "text-gray-500 hover:bg-white/5 hover:text-white"
+                  : "text-[#667085] hover:bg-white/5 hover:text-[#172033]"
               }`}
             >
               {f}
@@ -978,7 +978,7 @@ export default function PlannerPage() {
         </div>
         <Button
           onClick={openAdd}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0"
+          className="zentric-primary-action border-0 text-white"
         >
           <Plus className="h-4 w-4" />
           New Task
@@ -1002,14 +1002,14 @@ export default function PlannerPage() {
             <Button
               onClick={coach && dailyPlan.length ? syncDailyMissionToTasks : openAdd}
               disabled={syncingMission}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+              className="zentric-primary-action text-white"
             >
               {syncingMission ? <Loader2 className="h-4 w-4 animate-spin" /> : coach && dailyPlan.length ? <Sparkles className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               {coach && dailyPlan.length ? "Sync Today's Mission" : "Create first task"}
             </Button>
           }
           secondary={
-            <Button asChild variant="outline" className="border-blue-400/30 text-blue-100">
+            <Button asChild variant="outline" className="border-blue-400/30 text-[#315F8F]">
               <Link href="/ai-coach">
                 <Sparkles className="h-4 w-4" />
                 Generate from AI Coach
@@ -1024,20 +1024,20 @@ export default function PlannerPage() {
               key={task.id}
               className={`group flex items-start gap-3 rounded-xl border p-4 transition-all ${
                 task.completed
-                  ? "bg-white/2 border-white/5 opacity-60"
-                  : "bg-white/3 border-white/8 hover:border-white/15"
+                  ? "bg-[#F7FAFD] border-[#D6E4F5] opacity-60"
+                  : "bg-[#FFFDF9] border-[#D6E4F5] hover:border-[#A8BFD8]"
               }`}
             >
               <button onClick={() => toggleComplete(task)} className="mt-0.5 flex-shrink-0">
                 {task.completed ? (
                   <CheckCircle className="h-5 w-5 text-green-400" />
                 ) : (
-                  <Circle className="h-5 w-5 text-gray-500 transition-colors hover:text-purple-400" />
+                  <Circle className="h-5 w-5 text-[#667085] transition-colors hover:text-purple-400" />
                 )}
               </button>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`text-sm font-medium ${task.completed ? "line-through text-gray-500" : "text-white"}`}>
+                  <span className={`text-sm font-medium ${task.completed ? "line-through text-[#667085]" : "text-[#172033]"}`}>
                     {task.title}
                   </span>
                   <Badge
@@ -1059,21 +1059,21 @@ export default function PlannerPage() {
                     </span>
                   )}
                   {task.deadline && !task.completed && (
-                    <span className="flex items-center gap-1 text-xs text-blue-300">
+                    <span className="flex items-center gap-1 text-xs text-[#315F8F]">
                       <Bell className="h-3 w-3" />
                       {reminders.enabled ? getRelativeReminderLabel(task, reminders.leadMinutes) : "Reminder optional"}
                     </span>
                   )}
                 </div>
                 {task.description && (
-                  <p className="mt-1 truncate text-xs text-gray-500">{task.description}</p>
+                  <p className="mt-1 truncate text-xs text-[#667085]">{task.description}</p>
                 )}
               </div>
               <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-gray-500 hover:text-white"
+                  className="h-7 w-7 text-[#667085] hover:text-[#172033]"
                   onClick={() => openEdit(task)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -1081,7 +1081,7 @@ export default function PlannerPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-gray-500 hover:text-red-400"
+                  className="h-7 w-7 text-[#667085] hover:text-red-400"
                   onClick={() => deleteTask(task.id)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -1120,16 +1120,16 @@ export default function PlannerPage() {
 function MetricCard({ label, value, tone }: { label: string; value: string; tone: "emerald" | "purple" | "yellow" | "blue" }) {
   const colorClass =
     tone === "emerald"
-      ? "text-emerald-100"
+      ? "text-[#28714D]"
       : tone === "purple"
-        ? "text-purple-100"
+        ? "text-[#315F8F]"
         : tone === "yellow"
-          ? "text-yellow-100"
-          : "text-blue-100";
+          ? "text-[#7A5B00]"
+          : "text-[#315F8F]";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{label}</p>
+    <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">{label}</p>
       <p className={`mt-2 text-2xl font-bold ${colorClass}`}>{value}</p>
     </div>
   );
@@ -1137,10 +1137,10 @@ function MetricCard({ label, value, tone }: { label: string; value: string; tone
 
 function MiniStat({ icon: Icon, label, value }: { icon: typeof Clock3; label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <Icon className="mb-3 h-4 w-4 text-blue-300" />
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-1 line-clamp-2 text-sm font-semibold text-white">{value}</p>
+    <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+      <Icon className="mb-3 h-4 w-4 text-[#315F8F]" />
+      <p className="text-xs text-[#667085]">{label}</p>
+      <p className="mt-1 line-clamp-2 text-sm font-semibold text-[#172033]">{value}</p>
     </div>
   );
 }

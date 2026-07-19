@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -190,7 +190,7 @@ export default function LearningModePage() {
     <Suspense
       fallback={
         <main className="flex min-h-[70vh] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-300" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#315F8F]" />
         </main>
       }
     >
@@ -427,20 +427,20 @@ function LearningModeContent() {
   if (loading) {
     return (
       <main className="flex min-h-[70vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-300" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#315F8F]" />
       </main>
     );
   }
 
   if (!topic) {
     return (
-      <main className="mx-auto max-w-6xl p-5 lg:p-8">
+      <main className="zentric-page-shell mx-auto max-w-6xl">
         <EmptyState
           icon={GraduationCap}
           title="No guided learning mission yet."
           description="Set or resume a goal in AI Coach and Zentric will create your next learning session with video, notes, quiz, coding practice, project work, and recap."
           action={
-            <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+            <Button asChild className="zentric-primary-action text-white">
               <Link href="/ai-coach">
                 <Sparkles className="h-4 w-4" />
                 Open AI Coach
@@ -448,7 +448,7 @@ function LearningModeContent() {
             </Button>
           }
           secondary={
-            <Button asChild variant="outline" className="border-blue-400/30 text-blue-100">
+            <Button asChild variant="outline" className="border-blue-400/30 text-[#315F8F]">
               <Link href="/planner">
                 View Planner
                 <ArrowRight className="h-4 w-4" />
@@ -461,37 +461,37 @@ function LearningModeContent() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl p-5 lg:p-8">
-      <section className="mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-purple-500/15 via-blue-500/10 to-white/[0.02] p-6">
+    <main className="zentric-page-shell mx-auto max-w-7xl">
+      <section className="mb-6 overflow-hidden rounded-[1.75rem] zentric-human-card p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <Badge className="mb-4 border-purple-400/30 bg-purple-500/10 text-purple-100">
+            <Badge className="mb-4 border-purple-400/30 bg-purple-500/10 text-[#315F8F]">
               <Sparkles className="mr-1 h-3 w-3" />
               Learning Mode
             </Badge>
-            <h1 className="text-3xl font-bold text-white md:text-5xl">Day {topic.day}: {topic.title}</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
+            <h1 className="text-3xl font-bold text-[#172033] md:text-5xl">Day {topic.day}: {topic.title}</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-[#344054]">
               A guided workspace for {goalLabel}. Watch, read, practice, build, reflect, and complete the day
               without planning manually.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Session Progress</p>
-              <p className="mt-2 text-3xl font-bold text-emerald-100">{progress}%</p>
-              <p className="mt-1 text-xs text-gray-500">{completedStepCount}/{learningSteps.length} steps complete</p>
+            <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">Session Progress</p>
+              <p className="mt-2 text-3xl font-bold text-[#28714D]">{progress}%</p>
+              <p className="mt-1 text-xs text-[#667085]">{completedStepCount}/{learningSteps.length} steps complete</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Next Step</p>
-              <p className="mt-2 text-lg font-bold text-blue-100">{nextStep?.title ?? "Complete recap"}</p>
-              <p className="mt-1 text-xs text-gray-500">{coach?.dailyMission?.estimatedTime ?? topic.duration}</p>
+            <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[#667085]">Next Step</p>
+              <p className="mt-2 text-lg font-bold text-[#315F8F]">{nextStep?.title ?? "Complete recap"}</p>
+              <p className="mt-1 text-xs text-[#667085]">{coach?.dailyMission?.estimatedTime ?? topic.duration}</p>
             </div>
           </div>
         </div>
       </section>
 
       {message && (
-        <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="mb-5 rounded-2xl border border-[#BFD9C8] bg-[#F0F8F3] px-4 py-3 text-sm text-[#28714D]">
           {message}
         </div>
       )}
@@ -500,15 +500,15 @@ function LearningModeContent() {
         <Card className="border-blue-400/20 bg-blue-500/[0.03]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CalendarCheck2 className="h-5 w-5 text-blue-300" />
+              <CalendarCheck2 className="h-5 w-5 text-[#315F8F]" />
               Active Mission Context
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-lg font-semibold text-white">
+            <p className="text-lg font-semibold text-[#172033]">
               {coach?.dailyMission?.mission ?? `Prepare ${topic.title} for ${goalLabel}`}
             </p>
-            <p className="text-sm leading-6 text-gray-400">
+            <p className="text-sm leading-6 text-[#667085]">
               {coach?.dailyMission?.why ?? topic.aiExplanation ?? "Zentric selected this topic from your active goal and today's Planner routine."}
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -522,21 +522,21 @@ function LearningModeContent() {
         <Card className="border-purple-400/20 bg-purple-500/[0.04]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowRight className="h-5 w-5 text-purple-300" />
+              <ArrowRight className="h-5 w-5 text-[#315F8F]" />
               Do This Next
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-sm font-semibold text-white">{nextStep?.title ?? "Finish the recap"}</p>
-              <p className="mt-2 text-sm leading-6 text-gray-400">
+            <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+              <p className="text-sm font-semibold text-[#172033]">{nextStep?.title ?? "Finish the recap"}</p>
+              <p className="mt-2 text-sm leading-6 text-[#667085]">
                 {nextStep?.hint ?? "You completed the learning loop. Review your recap and move to the next topic when ready."}
               </p>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500" style={{ width: `${progress}%` }} />
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#667085]">
               Zentric updates Planner and AI Coach after each completed step.
             </p>
           </CardContent>
@@ -557,14 +557,14 @@ function LearningModeContent() {
                   key={step.id}
                   onClick={() => completeStep(step)}
                   disabled={done || Boolean(savingStep)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-purple-400/30 hover:bg-purple-500/10 disabled:cursor-default disabled:opacity-80"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4 text-left transition hover:border-purple-400/30 hover:bg-purple-500/10 disabled:cursor-default disabled:opacity-80"
                 >
-                  <span className={done ? "text-emerald-300" : "text-purple-300"}>
+                  <span className={done ? "text-[#28714D]" : "text-[#315F8F]"}>
                     {done ? <CheckCircle2 className="h-5 w-5" /> : savingStep === step.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
                   </span>
                   <span>
-                    <span className="block font-medium text-white">{step.title}</span>
-                    <span className="text-xs text-gray-500">{done ? "Completed" : "Click when finished"}</span>
+                    <span className="block font-medium text-[#172033]">{step.title}</span>
+                    <span className="text-xs text-[#667085]">{done ? "Completed" : "Click when finished"}</span>
                   </span>
                 </button>
               );
@@ -576,15 +576,15 @@ function LearningModeContent() {
           <Card className="border-emerald-400/20 bg-emerald-500/[0.03]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5 text-emerald-300" />
+                <ClipboardCheck className="h-5 w-5 text-[#28714D]" />
                 Guided Workspace
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-gray-500">Current action</p>
-                <p className="mt-2 text-lg font-semibold text-white">{nextStep?.title ?? "Session complete"}</p>
-                <p className="mt-2 text-sm leading-6 text-gray-400">
+              <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#667085]">Current action</p>
+                <p className="mt-2 text-lg font-semibold text-[#172033]">{nextStep?.title ?? "Session complete"}</p>
+                <p className="mt-2 text-sm leading-6 text-[#667085]">
                   {nextStep?.hint ?? "All learning steps are complete. Read your recap and finish the day."}
                 </p>
               </div>
@@ -602,14 +602,14 @@ function LearningModeContent() {
 
               {nextStep?.id === "video" && (
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4 text-sm leading-6 text-blue-100">
+                  <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4 text-sm leading-6 text-[#315F8F]">
                     Step 1: open the video. Step 2: write 1-2 lines about what you learned. Step 3: click complete.
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Button asChild variant="outline" className="border-red-400/30 text-red-200">
+                    <Button asChild variant="outline" className="border-red-400/30 text-[#9B2C2C]">
                       <Link href={topic.videoUrl} target="_blank">Open Video</Link>
                     </Button>
-                    <Button asChild variant="outline" className="border-blue-400/30 text-blue-200">
+                    <Button asChild variant="outline" className="border-blue-400/30 text-[#315F8F]">
                       <Link href={topic.docsUrl ?? topic.resourceUrl} target="_blank">Backup Resource</Link>
                     </Button>
                   </div>
@@ -620,7 +620,7 @@ function LearningModeContent() {
                     className="min-h-24"
                   />
                   {videoTakeaway.trim().length > 0 && videoTakeaway.trim().length < 10 ? (
-                    <p className="text-xs text-yellow-200">Write a little more to unlock completion.</p>
+                    <p className="text-xs text-[#7A5B00]">Write a little more to unlock completion.</p>
                   ) : null}
                 </div>
               )}
@@ -639,15 +639,15 @@ function LearningModeContent() {
 
               {nextStep?.id === "quiz" && (
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="font-semibold text-white">MCQ Practice Quiz</p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="font-semibold text-[#172033]">MCQ Practice Quiz</p>
+                        <p className="mt-1 text-xs text-[#667085]">
                           Answer all questions. You need at least 60% to complete this step.
                         </p>
                       </div>
-                      <Badge className={quizPassed ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-yellow-400/30 bg-yellow-400/10 text-yellow-100"}>
+                      <Badge className={quizPassed ? "border-emerald-400/30 bg-emerald-400/10 text-[#28714D]" : "border-yellow-400/30 bg-yellow-400/10 text-[#7A5B00]"}>
                         Score {answeredQuizCount}/{visibleQuizQuestions.length}: {quizScore}%
                       </Badge>
                     </div>
@@ -659,9 +659,9 @@ function LearningModeContent() {
                       const isCorrect = selectedAnswer === question.correctOption;
 
                       return (
-                        <div key={`${question.prompt}-${index}`} className="block rounded-2xl border border-white/10 bg-black/20 p-3">
-                          <span className="text-xs font-medium uppercase tracking-[0.16em] text-gray-500">Question {index + 1}</span>
-                          <p className="mt-1 text-sm text-gray-300">{question.prompt}</p>
+                        <div key={`${question.prompt}-${index}`} className="block rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                          <span className="text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">Question {index + 1}</span>
+                          <p className="mt-1 text-sm text-[#344054]">{question.prompt}</p>
 
                           <div className="mt-3 grid gap-2">
                             {question.options.map((item) => {
@@ -679,11 +679,11 @@ function LearningModeContent() {
                                   className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
                                     selected
                                       ? isCorrect
-                                        ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100"
-                                        : "border-red-400/40 bg-red-400/10 text-red-100"
+                                        ? "border-emerald-400/40 bg-emerald-400/10 text-[#28714D]"
+                                        : "border-red-400/40 bg-red-400/10 text-[#9B2C2C]"
                                       : correct
-                                        ? "border-emerald-400/30 bg-emerald-400/5 text-emerald-100"
-                                        : "border-white/10 bg-white/[0.03] text-gray-300 hover:border-purple-400/30"
+                                        ? "border-emerald-400/30 bg-emerald-400/5 text-[#28714D]"
+                                        : "border-[#D6E4F5] bg-[#FFFDF9] text-[#344054] hover:border-[#A8BFD8]"
                                   }`}
                                 >
                                   <span className="font-semibold">{item.option})</span> {item.text}
@@ -691,7 +691,7 @@ function LearningModeContent() {
                               );
                             })}
                             {isAnswered ? (
-                              <p className={isCorrect ? "text-xs font-medium text-emerald-300" : "text-xs font-medium text-red-300"}>
+                              <p className={isCorrect ? "text-xs font-medium text-[#28714D]" : "text-xs font-medium text-[#9B2C2C]"}>
                                 {isCorrect ? "Correct." : `Wrong — correct answer is ${question.correctOption}.`} {question.explanation}
                               </p>
                             ) : null}
@@ -706,7 +706,7 @@ function LearningModeContent() {
               {nextStep?.id === "practice" && (
                 <div className="space-y-3">
                   <Panel title="Practice targets" items={topic.companyQuestions ?? topic.questions} />
-                  <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                  <Button asChild className="zentric-primary-action text-white">
                     <Link href={topic.codingUrl} target={topic.codingUrl.startsWith("/") ? undefined : "_blank"}>
                       Open Practice
                     </Link>
@@ -751,7 +751,7 @@ function LearningModeContent() {
                 <Button
                   onClick={() => completeStep(nextStep)}
                   disabled={Boolean(savingStep) || !currentStepReady}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                  className="zentric-primary-action text-white"
                 >
                   {savingStep === nextStep.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   {nextStep.id === "video" && !currentStepReady
@@ -764,7 +764,7 @@ function LearningModeContent() {
                 <Button
                   onClick={completeDay}
                   disabled={savingStep === "complete-day"}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                  className="zentric-primary-action text-white"
                 >
                   {savingStep === "complete-day" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Finish Day Recap
@@ -776,7 +776,7 @@ function LearningModeContent() {
           <Card className="border-blue-400/20 bg-blue-500/[0.03]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-blue-300" />
+                <Target className="h-5 w-5 text-[#315F8F]" />
                 Topic Mastery Kit
               </CardTitle>
             </CardHeader>
@@ -786,17 +786,17 @@ function LearningModeContent() {
                 <Info label="Estimated Time" value={topic.estimatedTime ?? topic.duration} />
                 <Info label="Phase" value={topic.phase} />
               </div>
-              <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-gray-300">
+              <p className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4 text-sm leading-6 text-[#344054]">
                 {topic.aiExplanation ?? topic.notes}
               </p>
               <div className="grid gap-3 md:grid-cols-3">
-                <Button asChild variant="outline" className="border-red-400/30 text-red-200">
+                <Button asChild variant="outline" className="border-red-400/30 text-[#9B2C2C]">
                   <Link href={topic.videoUrl} target="_blank">Best Video</Link>
                 </Button>
-                <Button asChild variant="outline" className="border-blue-400/30 text-blue-200">
+                <Button asChild variant="outline" className="border-blue-400/30 text-[#315F8F]">
                   <Link href={topic.docsUrl ?? topic.resourceUrl} target="_blank">Docs / Notes</Link>
                 </Button>
-                <Button asChild variant="outline" className="border-emerald-400/30 text-emerald-200">
+                <Button asChild variant="outline" className="border-emerald-400/30 text-[#28714D]">
                   <Link href={topic.codingUrl} target={topic.codingUrl.startsWith("/") ? undefined : "_blank"}>Practice</Link>
                 </Button>
               </div>
@@ -806,7 +806,7 @@ function LearningModeContent() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-purple-300" />
+                <BookOpen className="h-5 w-5 text-[#315F8F]" />
                 Notes, Cheatsheet & Revision
               </CardTitle>
             </CardHeader>
@@ -847,8 +847,8 @@ function LearningModeContent() {
                 <Info label="Revision Trigger" value={topicRevision?.due ? "Due now" : "Queued by AI Coach"} />
               </div>
 
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
-                <p className="font-semibold text-emerald-100">AI recap preview</p>
+              <div className="rounded-2xl border border-[#BFD9C8] bg-[#F0F8F3] p-4">
+                <p className="font-semibold text-[#28714D]">AI recap preview</p>
                 <p className="mt-2 text-sm leading-6 text-emerald-50/80">
                   Today you are building mastery in {topic.title}. After you complete the day, AI Coach will use your
                   finished steps and reflection to update Planner progress, your growth timeline, and tomorrow&apos;s revision queue.
@@ -861,9 +861,9 @@ function LearningModeContent() {
 
               <div className="grid gap-3 md:grid-cols-3">
                 {(topic.flashcards ?? []).map((card) => (
-                  <div key={card.front} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-sm font-semibold text-white">{card.front}</p>
-                    <p className="mt-2 text-xs leading-5 text-gray-500">{card.back}</p>
+                  <div key={card.front} className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+                    <p className="text-sm font-semibold text-[#172033]">{card.front}</p>
+                    <p className="mt-2 text-xs leading-5 text-[#667085]">{card.back}</p>
                   </div>
                 ))}
               </div>
@@ -877,20 +877,20 @@ function LearningModeContent() {
                 <Button
                   onClick={completeDay}
                   disabled={savingStep === "complete-day" || !sessionComplete}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                  className="zentric-primary-action text-white"
                 >
                   {savingStep === "complete-day" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   Complete Day
                 </Button>
                 {nextTopic && (
-                  <Button asChild variant="outline" className="border-blue-400/30 text-blue-100">
+                  <Button asChild variant="outline" className="border-blue-400/30 text-[#315F8F]">
                     <Link href={`/learning-mode?topic=${nextTopic.id}`}>
                       Next Topic
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
                 )}
-                <Button asChild variant="outline" className="border-purple-400/30 text-purple-100">
+                <Button asChild variant="outline" className="border-purple-400/30 text-[#315F8F]">
                   <Link href="/planner">
                     <RefreshCw className="h-4 w-4" />
                     Back to Planner
@@ -907,18 +907,18 @@ function LearningModeContent() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs uppercase tracking-[0.16em] text-gray-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+      <p className="text-xs uppercase tracking-[0.16em] text-[#667085]">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-[#172033]">{value}</p>
     </div>
   );
 }
 
 function Panel({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="mb-3 font-semibold text-white">{title}</p>
-      <ul className="space-y-2 text-sm leading-6 text-gray-400">
+    <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] p-4">
+      <p className="mb-3 font-semibold text-[#172033]">{title}</p>
+      <ul className="space-y-2 text-sm leading-6 text-[#667085]">
         {items.map((item) => (
           <li key={item} className="flex gap-2">
             <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-purple-300" />

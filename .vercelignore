@@ -2,6 +2,7 @@
 .env.*
 .next
 .next-validation
+.vercel
 dev.db
 docs
 output

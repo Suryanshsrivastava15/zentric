@@ -11,6 +11,7 @@ import {
   User,
   Copy,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -43,6 +44,7 @@ export default function ChatPage() {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [useZentricContext, setUseZentricContext] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -147,6 +149,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           conversationId: activeConversation.id,
           message: userMessage,
+          useZentricContext,
         }),
       });
 
@@ -219,22 +222,22 @@ export default function ChatPage() {
   };
 
   const suggestedPrompts = [
-    "Help me plan my study schedule for DSA",
+    "Explain a difficult topic in simple words",
     "Explain the two-pointer technique with examples",
     "Review my approach to solving binary search problems",
     "Give me a mock interview question for a software engineer role",
-    "What should I focus on to prepare for a Google interview?",
-    "Help me improve my productivity and task management",
+    "Help me write a cleaner project explanation",
+    "Debug this code and explain the issue",
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-transparent">
       {/* Conversation List Sidebar */}
-      <div className="w-64 border-r border-white/10 flex flex-col bg-gray-950 flex-shrink-0">
-        <div className="p-4 border-b border-white/10">
+      <div className="flex w-64 flex-shrink-0 flex-col border-r border-[#D9E3EE] bg-[#FFFDF9]/90">
+        <div className="border-b border-[#D9E3EE] p-4">
           <Button
             onClick={createConversation}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0"
+            className="zentric-primary-action w-full border-0"
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -250,7 +253,7 @@ export default function ChatPage() {
               description="Start a focused conversation with Ask Zentric. Your previous coaching, interview, and study chats will stay here."
               className="p-4"
               action={
-                <Button onClick={createConversation} size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                <Button onClick={createConversation} size="sm" className="zentric-primary-action text-white">
                   <Plus className="h-4 w-4" />
                   Start chat
                 </Button>
@@ -262,19 +265,19 @@ export default function ChatPage() {
                 key={conv.id}
                 className={`group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all mb-1 ${
                   activeConversation?.id === conv.id
-                    ? "bg-purple-500/15 border border-purple-500/30"
-                    : "hover:bg-white/5"
+                    ? "border border-[#B8CCE2] bg-[#EDF3FB] shadow-sm"
+                    : "hover:bg-[#F4F8FC]"
                 }`}
                 onClick={() => loadConversation(conv)}
               >
-                <MessageSquare className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-[#8A98A8]" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-300 truncate">{conv.title}</p>
-                  <p className="text-xs text-gray-600">{formatRelativeTime(conv.updatedAt)}</p>
+                  <p className="truncate text-xs font-medium text-[#172033]">{conv.title}</p>
+                  <p className="text-xs text-[#667085]">{formatRelativeTime(conv.updatedAt)}</p>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-600 hover:text-red-400"
+                  className="rounded p-1 text-[#98A2B3] opacity-0 group-hover:opacity-100 hover:text-red-600"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -285,17 +288,17 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         {!activeConversation ? (
           /* Welcome Screen */
-          <div className="flex-1 flex items-center justify-center p-6">
+          <div className="flex flex-1 items-center justify-center p-6">
             <div className="max-w-lg w-full text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center mx-auto mb-6">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#274C77] shadow-lg shadow-blue-100">
                 <Bot className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Zentric AI Assistant</h2>
-              <p className="text-gray-400 text-sm mb-8">
-                Your personal AI for coding, learning, and career growth
+              <h2 className="mb-2 text-2xl font-bold text-[#172033]">Ask Zentric</h2>
+              <p className="mb-8 text-sm text-[#667085]">
+                Ask anything like a normal chatbot. Your AI Coach context stays off unless you turn it on.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
                 {suggestedPrompts.map((prompt, i) => (
@@ -305,7 +308,7 @@ export default function ChatPage() {
                       await createConversation();
                       setInput(prompt);
                     }}
-                    className="p-3 rounded-xl bg-white/3 border border-white/8 text-left text-xs text-gray-400 hover:bg-white/8 hover:text-white hover:border-purple-500/30 transition-all"
+                    className="rounded-xl border border-[#D9E3EE] bg-[#FFFDF9] p-3 text-left text-xs text-[#536578] shadow-sm shadow-blue-100/40 transition-all hover:-translate-y-0.5 hover:border-[#B8CCE2] hover:bg-[#F4F8FC] hover:text-[#172033]"
                   >
                     {prompt}
                   </button>
@@ -313,7 +316,7 @@ export default function ChatPage() {
               </div>
               <Button
                 onClick={createConversation}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 border-0"
+                className="zentric-primary-action border-0"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Start a Conversation
@@ -323,11 +326,48 @@ export default function ChatPage() {
         ) : (
           <>
             {/* Chat Header */}
-            <div className="border-b border-white/10 px-6 py-3 flex items-center gap-3">
-              <Bot className="w-5 h-5 text-purple-400" />
-              <span className="text-sm font-medium text-white truncate">
-                {activeConversation.title}
-              </span>
+            <div className="flex min-w-0 flex-col gap-3 border-b border-[#D9E3EE] bg-[#FFFDF9]/70 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+                <Bot className="w-5 h-5 flex-shrink-0 text-[#274C77]" />
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-[#172033]">
+                    {activeConversation.title}
+                  </span>
+                  <span className="block truncate text-xs text-[#667085]">
+                    {useZentricContext
+                      ? "Goal-aware mode is on for your next replies."
+                      : "Independent chat mode. AI Coach context is off."}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUseZentricContext((current) => !current)}
+                className={`flex w-full max-w-full items-center justify-between gap-2 rounded-full border px-3 py-2 text-xs font-medium transition-all sm:w-fit ${
+                  useZentricContext
+                    ? "border-[#8BA9C6] bg-[#EDF3FB] text-[#172033] shadow-sm shadow-blue-100"
+                    : "border-[#D9E3EE] bg-[#FFFDF9] text-[#536578] hover:border-[#B8CCE2] hover:bg-[#F4F8FC]"
+                }`}
+                aria-pressed={useZentricContext}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">
+                    <span className="hidden sm:inline">Use my </span>Zentric context
+                  </span>
+                </span>
+                <span
+                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                    useZentricContext ? "bg-[#274C77]" : "bg-[#C9D6E3]"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      useZentricContext ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+              </button>
             </div>
 
             {/* Messages */}
@@ -337,8 +377,8 @@ export default function ChatPage() {
                   <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-600 text-sm">
-                  Start the conversation by sending a message
+                <div className="py-8 text-center text-sm text-[#667085]">
+                  Start a normal chat. Turn on Zentric context only when you want a goal-aware answer.
                 </div>
               ) : (
                 messages.map((msg) => (
@@ -347,32 +387,32 @@ export default function ChatPage() {
                     className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {msg.role === "assistant" && (
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#274C77]">
                         <Bot className="w-3.5 h-3.5 text-white" />
                       </div>
                     )}
                     <div
                       className={`group max-w-[80%] relative ${
                         msg.role === "user"
-                          ? "bg-gradient-to-r from-purple-600/80 to-blue-600/80 rounded-2xl rounded-tr-sm px-4 py-3"
-                          : "bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3"
+                          ? "rounded-2xl rounded-tr-sm bg-[#274C77] px-4 py-3 text-white shadow-sm"
+                          : "rounded-2xl rounded-tl-sm border border-[#D9E3EE] bg-[#FFFDF9] px-4 py-3 shadow-sm shadow-blue-100/40"
                       }`}
                     >
                       {msg.role === "assistant" ? (
-                        <div className="prose prose-invert prose-sm max-w-none text-gray-300">
+                        <div className="prose prose-sm max-w-none text-[#314154]">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
                               code({ children, className, ...rest }) {
                                 const isBlock = className?.includes("language-");
                                 return isBlock ? (
-                                  <pre className="bg-gray-900 rounded-lg p-3 overflow-x-auto border border-white/10 my-2">
-                                    <code className={`${className} text-xs text-green-300`} {...rest}>
+                                  <pre className="my-2 overflow-x-auto rounded-lg border border-[#D9E3EE] bg-[#172033] p-3">
+                                    <code className={`${className} text-xs text-emerald-100`} {...rest}>
                                       {children}
                                     </code>
                                   </pre>
                                 ) : (
-                                  <code className="bg-gray-800 text-purple-300 px-1.5 py-0.5 rounded text-xs" {...rest}>
+                                  <code className="rounded bg-[#EDF3FB] px-1.5 py-0.5 text-xs text-[#274C77]" {...rest}>
                                     {children}
                                   </code>
                                 );
@@ -387,18 +427,18 @@ export default function ChatPage() {
                       )}
                       <button
                         onClick={() => copyMessage(msg.id, msg.content)}
-                        className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 border border-white/10 rounded-full p-1"
+                        className="absolute -right-2 -top-2 rounded-full border border-[#D9E3EE] bg-[#FFFDF9] p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
                       >
                         {copiedId === msg.id ? (
-                          <Check className="w-3 h-3 text-green-400" />
+                          <Check className="w-3 h-3 text-emerald-600" />
                         ) : (
-                          <Copy className="w-3 h-3 text-gray-400" />
+                          <Copy className="w-3 h-3 text-[#667085]" />
                         )}
                       </button>
                     </div>
                     {msg.role === "user" && (
-                      <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <User className="w-3.5 h-3.5 text-gray-300" />
+                      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-[#D9E3EE] bg-[#EDF3FB]">
+                        <User className="w-3.5 h-3.5 text-[#536578]" />
                       </div>
                     )}
                   </div>
@@ -408,30 +448,30 @@ export default function ChatPage() {
               {/* Streaming message */}
               {streamingMessage && (
                 <div className="flex gap-3 justify-start">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#274C77]">
                     <Bot className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <div className="max-w-[80%] bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
-                    <div className="prose prose-invert prose-sm max-w-none text-gray-300">
+                  <div className="max-w-[80%] rounded-2xl rounded-tl-sm border border-[#D9E3EE] bg-[#FFFDF9] px-4 py-3 shadow-sm shadow-blue-100/40">
+                    <div className="prose prose-sm max-w-none text-[#314154]">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {streamingMessage}
                       </ReactMarkdown>
                     </div>
-                    <span className="inline-block w-1 h-4 bg-purple-400 animate-pulse ml-1" />
+                    <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-[#274C77]" />
                   </div>
                 </div>
               )}
 
               {sending && !streamingMessage && (
                 <div className="flex gap-3">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#274C77]">
                     <Bot className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="rounded-2xl rounded-tl-sm border border-[#D9E3EE] bg-[#FFFDF9] px-4 py-3">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-[#274C77]" style={{ animationDelay: "0ms" }} />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-[#274C77]" style={{ animationDelay: "150ms" }} />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-[#274C77]" style={{ animationDelay: "300ms" }} />
                     </div>
                   </div>
                 </div>
@@ -441,7 +481,7 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-white/10 p-4">
+            <div className="border-t border-[#D9E3EE] bg-[#FFFDF9]/70 p-4">
               <div className="flex gap-3 max-w-4xl mx-auto">
                 <div className="flex-1 relative">
                   <Textarea
@@ -449,7 +489,7 @@ export default function ChatPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Message Zentric AI... (Enter to send, Shift+Enter for new line)"
+                    placeholder="Ask Zentric anything... (Enter to send, Shift+Enter for new line)"
                     className="resize-none min-h-[52px] max-h-32 pr-12 text-sm"
                     rows={1}
                     disabled={sending}
@@ -458,7 +498,7 @@ export default function ChatPage() {
                 <Button
                   onClick={sendMessage}
                   disabled={!input.trim() || sending}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0 h-[52px] px-4 flex-shrink-0"
+                  className="zentric-primary-action h-[52px] flex-shrink-0 border-0 px-4"
                 >
                   {sending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -467,7 +507,10 @@ export default function ChatPage() {
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-gray-600 text-center mt-2">
+              <p className="mt-2 text-center text-xs text-[#667085]">
+                {useZentricContext
+                  ? "Goal context is on. Ask Zentric may use your AI Coach data for this chat."
+                  : "Independent mode is on. Ask Zentric will not use your AI Coach data."}{" "}
                 AI can make mistakes. Verify important information.
               </p>
             </div>

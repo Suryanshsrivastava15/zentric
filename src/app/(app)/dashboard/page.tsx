@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -23,7 +23,6 @@ import {
   LineChart,
   Rocket,
   ShieldCheck,
-  Sparkles,
   Star,
   Target,
   Trophy,
@@ -328,7 +327,7 @@ const recentAchievements = [
 function ProgressRing({
   value,
   label,
-  color = "#8b5cf6",
+  color = "#38bdf8",
   size = "md",
 }: {
   value: number;
@@ -342,7 +341,7 @@ function ProgressRing({
   const dimensions = size === "sm" ? "h-24 w-24" : "h-28 w-28";
 
   return (
-    <div className="group flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]">
+    <div className="group flex flex-col items-center gap-3 rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4 shadow-sm shadow-blue-100/60 transition-colors duration-200 hover:border-blue-200">
       <div className={`relative ${dimensions}`}>
         <svg className="h-full w-full -rotate-90" viewBox="0 0 96 96">
           <circle
@@ -350,7 +349,7 @@ function ProgressRing({
             cy="48"
             r={radius}
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="rgba(148,163,184,0.16)"
             strokeWidth="8"
           />
           <circle
@@ -367,10 +366,10 @@ function ProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold text-white">{value}%</span>
+          <span className="text-xl font-bold text-[#172033]">{value}%</span>
         </div>
       </div>
-      <p className="text-center text-xs font-medium text-gray-300">{label}</p>
+      <p className="text-center text-xs font-medium text-slate-600">{label}</p>
     </div>
   );
 }
@@ -385,12 +384,12 @@ function MetricCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-400/30 hover:bg-purple-500/[0.05]">
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-300">
+    <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4 shadow-sm shadow-blue-100/60">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6E4F5] bg-[#EEF4FF] text-blue-600">
         <Icon className="h-4 w-4" />
       </div>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-white">{value}</p>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-[#172033]">{value}</p>
     </div>
   );
 }
@@ -408,12 +407,12 @@ function SectionHeader({
     <div className="mb-5 flex items-center justify-between gap-4">
       <div>
         {eyebrow && (
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-purple-300">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             {eyebrow}
           </p>
         )}
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-[#172033]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#D6E4F5] bg-[#EEF4FF] text-blue-600">
             <Icon className="h-4 w-4" />
           </span>
           {title}
@@ -432,7 +431,7 @@ function GlassPanel({
 }) {
   return (
     <section
-      className={`glass-card rounded-[1.35rem] p-5 shadow-2xl shadow-black/20 transition-all duration-300 hover:border-white/15 ${className}`}
+      className={`zentric-human-card rounded-3xl p-5 transition-colors duration-200 hover:border-blue-200 ${className}`}
     >
       {children}
     </section>
@@ -574,36 +573,25 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="relative mx-auto max-w-7xl overflow-hidden p-5 sm:p-6 lg:p-8">
-      <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-blue-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-40 h-80 w-80 rounded-full bg-purple-600/20 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-20 left-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-
+    <div className="zentric-page-shell relative mx-auto max-w-7xl overflow-hidden">
       <div className="relative space-y-6">
-        <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#05070F]/80 p-6 shadow-2xl shadow-purple-950/20 backdrop-blur-xl sm:p-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.22),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.18),transparent_30%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent" />
-
-          <div className="relative grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="relative overflow-hidden rounded-3xl border border-[#D6E4F5] bg-[#F8FBFF] p-6 shadow-sm shadow-blue-100/70 sm:p-8">
+          <div className="relative grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <Badge className="mb-5 border-blue-400/30 bg-blue-500/10 text-blue-200">
-                <Sparkles className="mr-1 h-3 w-3" />
-                AI Growth Operating System
+              <Badge className="mb-5 border-[#D6E4F5] bg-[#EEF4FF] text-[#667085]">
+                Today
               </Badge>
 
-              <p className="text-sm font-medium text-gray-300">
-                Good Morning,{" "}
-                <span className="gradient-text font-semibold">{firstName}</span>{" "}
+              <p className="text-sm font-medium text-[#667085]">
+                Good morning, <span className="font-semibold text-[#172033]">{firstName}</span>{" "}
                 👋
               </p>
-              <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-5xl">
-                Today&apos;s AI Growth Brief
+              <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-[#172033] sm:text-5xl">
+                Your plan for today
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-400 sm:text-base">
-                Your command center is optimizing Planner, Study Tracker,
-                LeetCode, Coding Hub, Second Brain, Resume, Career Hub and AI
-                Coach into one mission: the next best action for your dream
-                career.
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#667085] sm:text-base">
+                One clear next step, based on your goal, planner, learning progress,
+                practice, notes, and career readiness.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -614,12 +602,12 @@ export default function DashboardPage() {
                   : heroStats.map((stat) => (
                       <div
                         key={stat.label}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-400/30"
+                        className="rounded-2xl border border-[#D6E4F5] bg-[#EEF4FF] p-4"
                       >
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
                           {stat.label}
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-white sm:text-base">
+                        <p className="mt-2 text-sm font-semibold text-[#172033] sm:text-base">
                           {stat.value}
                         </p>
                       </div>
@@ -630,9 +618,9 @@ export default function DashboardPage() {
                 {recommendations.map((recommendation) => (
                   <div
                     key={recommendation}
-                    className="flex items-center gap-3 rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.04] px-4 py-3 text-sm text-gray-200"
+                    className="flex items-center gap-3 rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] px-4 py-3 text-sm text-[#344054] shadow-sm shadow-blue-100/50"
                   >
-                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-300" />
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-blue-600" />
                     {recommendation}
                   </div>
                 ))}
@@ -642,17 +630,17 @@ export default function DashboardPage() {
                 <Button
                   asChild
                   size="lg"
-                  className="h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 text-white shadow-lg shadow-purple-600/25 transition-transform hover:scale-[1.02]"
+                  className="zentric-primary-action h-12 rounded-2xl px-6 text-white"
                 >
                   <Link href={primaryAction.href}>
                     Start Today&apos;s Mission
                     <Rocket className="h-4 w-4" />
                   </Link>
                 </Button>
-                <p className="text-sm text-blue-100/80">
+                <p className="text-sm text-[#667085]">
                   Completing today&apos;s plan increases your mission readiness
                   by{" "}
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-[#172033]">
                     {growth?.readinessIncrease ?? 0}%
                   </span>
                   .
@@ -660,25 +648,25 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5 backdrop-blur">
+            <div className="rounded-3xl border border-[#D6E4F5] bg-[#EEF4FF] p-5">
               <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#667085]">
                     Next best action
                   </p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">
+                  <h3 className="mt-2 text-xl font-semibold text-[#172033]">
                     {primaryAction.title}
                   </h3>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-200">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] text-blue-600">
                   <Target className="h-5 w-5" />
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">{readinessTargetLabel}</span>
-                    <span className="font-medium text-white">
+                    <span className="text-[#667085]">{readinessTargetLabel}</span>
+                    <span className="font-medium text-[#172033]">
                       {companyReadinessItems[0]?.readiness ?? 0}%
                     </span>
                   </div>
@@ -689,27 +677,27 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="text-gray-400">Study system confidence</span>
-                    <span className="font-medium text-white">
+                    <span className="text-[#667085]">Study system confidence</span>
+                    <span className="font-medium text-[#172033]">
                       {studyCompletion}%
                     </span>
                   </div>
                   <Progress value={studyCompletion} className="h-2.5" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-white/[0.04] p-4">
-                    <p className="text-xs text-gray-500">Focus</p>
-                    <p className="mt-1 font-semibold text-white">{focus.topic}</p>
+                  <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+                    <p className="text-xs text-[#667085]">Focus</p>
+                    <p className="mt-1 font-semibold text-[#172033]">{focus.topic}</p>
                   </div>
-                  <div className="rounded-2xl bg-white/[0.04] p-4">
-                    <p className="text-xs text-gray-500">Time</p>
-                    <p className="mt-1 font-semibold text-white">
+                  <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+                    <p className="text-xs text-[#667085]">Time</p>
+                    <p className="mt-1 font-semibold text-[#172033]">
                       {focus.estimatedTime}
                     </p>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-blue-400/10 bg-blue-400/[0.05] p-4">
-                  <p className="text-sm leading-6 text-blue-100/90">
+                <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+                  <p className="text-sm leading-6 text-[#667085]">
                     {focus.reason} This is the fastest visible readiness gain
                     Zentric found from your connected modules.
                   </p>
@@ -720,32 +708,32 @@ export default function DashboardPage() {
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <GlassPanel className="border-blue-400/15 bg-blue-500/[0.03]">
+          <GlassPanel>
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-200/80">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                   What matters now
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-white">
+                <h2 className="mt-2 text-2xl font-bold text-[#172033]">
                   {primaryAction.title}
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-400">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[#667085]">
                   Zentric picked this from your mission, weak area, planner,
                   learning progress, coding activity, Second Brain, and Career
                   Hub signals.
                 </p>
               </div>
-              <Badge className="w-fit border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+              <Badge className="w-fit border-[#D6E4F5] bg-[#EEF4FF] text-[#667085]">
                 {primaryAction.impact} expected lift
               </Badge>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[0.75fr_1fr]">
-              <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <div className="rounded-3xl border border-[#D6E4F5] bg-[#EEF4FF] p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500">Mission progress</p>
-                    <p className="mt-1 text-4xl font-bold text-white">
+                    <p className="text-xs text-[#667085]">Mission progress</p>
+                    <p className="mt-1 text-4xl font-bold text-[#172033]">
                       {missionProgress.overallProgress}%
                     </p>
                   </div>
@@ -753,15 +741,15 @@ export default function DashboardPage() {
                 </div>
                 <Progress value={missionProgress.overallProgress} className="h-2.5" />
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-2xl bg-white/[0.04] p-3">
-                    <p className="text-xs text-gray-500">Weakest</p>
-                    <p className="mt-1 font-semibold text-red-200">
+                  <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                    <p className="text-xs text-[#667085]">Weakest</p>
+                    <p className="mt-1 font-semibold text-red-600">
                       {weakestSignal?.label ?? "Calculating"}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/[0.04] p-3">
-                    <p className="text-xs text-gray-500">Strongest</p>
-                    <p className="mt-1 font-semibold text-emerald-200">
+                  <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-3">
+                    <p className="text-xs text-[#667085]">Strongest</p>
+                    <p className="mt-1 font-semibold text-emerald-700">
                       {strongestSignal?.label ?? "Calculating"}
                     </p>
                   </div>
@@ -773,28 +761,28 @@ export default function DashboardPage() {
                   <Link
                     key={`${item.time}-${item.title}`}
                     href={item.href}
-                    className={`group flex items-center gap-4 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-500/[0.05] ${
+                    className={`group flex items-center gap-4 rounded-2xl border p-4 transition-colors duration-200 ${
                       index === 0
-                        ? "border-blue-400/40 bg-blue-500/[0.08]"
-                        : "border-white/10 bg-white/[0.03]"
+                        ? "border-blue-200 bg-[#E6F0FF]"
+                        : "border-[#D6E4F5] bg-[#F8FBFF] hover:bg-[#EEF4FF]"
                     }`}
                   >
-                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/[0.06] text-sm font-bold text-white">
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-[#D6E4F5] bg-[#EEF4FF] text-sm font-bold text-[#344054]">
                       {item.time}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-white">{item.title}</p>
+                      <p className="truncate font-semibold text-[#172033]">{item.title}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="secondary">
                           <Clock className="mr-1 h-3 w-3" />
                           {item.duration}
                         </Badge>
-                        <Badge className="border-purple-400/30 bg-purple-400/10 text-purple-200">
+                        <Badge className="border-[#D6E4F5] bg-[#EEF4FF] text-[#667085]">
                           {item.priority}
                         </Badge>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-200" />
+                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600" />
                   </Link>
                 ))}
               </div>
@@ -808,14 +796,14 @@ export default function DashboardPage() {
                 {visibleCoachSignals.map((signal) => (
                   <div
                     key={signal.insight}
-                    className="rounded-2xl border border-purple-400/10 bg-purple-500/[0.05] p-4"
+                    className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4"
                   >
-                    <p className="text-sm leading-6 text-gray-200">{signal.insight}</p>
+                    <p className="text-sm leading-6 text-[#344054]">{signal.insight}</p>
                     <Button
                       asChild
                       size="sm"
                       variant="ghost"
-                      className="mt-3 h-8 rounded-full text-purple-200 hover:bg-purple-500/10"
+                      className="mt-3 h-8 rounded-full text-blue-600 hover:bg-[#E6F0FF]"
                     >
                       <Link href={signal.href}>
                         {signal.action}
@@ -829,7 +817,7 @@ export default function DashboardPage() {
 
             <GlassPanel>
               <SectionHeader icon={Lightbulb} eyebrow="Momentum" title="Coach message" />
-              <p className="rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.05] p-4 text-sm leading-6 text-emerald-50/90">
+              <p className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4 text-sm leading-6 text-[#667085]">
                 {motivation}
               </p>
             </GlassPanel>
@@ -841,17 +829,17 @@ export default function DashboardPage() {
             <Link
               key={card.title}
               href={card.href}
-              className="group rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/30 hover:bg-blue-500/[0.05]"
+              className="group rounded-[1.35rem] border border-[#D6E4F5] bg-[#F8FBFF] p-5 shadow-sm shadow-blue-100/60 transition-colors duration-200 hover:border-blue-200"
             >
               <div className="mb-5 flex items-center justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-200">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#D6E4F5] bg-[#EEF4FF] text-blue-600">
                   <card.icon className="h-5 w-5" />
                 </div>
-                <ArrowRight className="h-4 w-4 text-gray-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-200" />
+                <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600" />
               </div>
-              <p className="text-sm text-gray-400">{card.title}</p>
-              <p className="mt-2 text-3xl font-bold text-white">{card.value}</p>
-              <p className="mt-3 text-sm leading-6 text-gray-500">{card.detail}</p>
+              <p className="text-sm text-[#667085]">{card.title}</p>
+              <p className="mt-2 text-3xl font-bold text-[#172033]">{card.value}</p>
+              <p className="mt-3 text-sm leading-6 text-[#667085]">{card.detail}</p>
             </Link>
           ))}
         </div>
@@ -867,16 +855,16 @@ export default function DashboardPage() {
                   onClick={() => setSelectedCompany(company)}
                   className={`w-full rounded-2xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
                     selectedCompany.company === company.company
-                      ? "border-purple-400/50 bg-purple-500/10"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                      ? "border-blue-200 bg-[#E6F0FF]"
+                      : "border-[#D6E4F5] bg-[#F8FBFF] hover:border-blue-200"
                   }`}
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="font-semibold text-white">{company.company}</p>
-                    <p className="font-bold text-blue-200">{company.readiness}%</p>
+                    <p className="font-semibold text-[#172033]">{company.company}</p>
+                    <p className="font-bold text-blue-600">{company.readiness}%</p>
                   </div>
                   <Progress value={company.readiness} className="h-2" />
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-[#667085]">
                     Missing: {company.missing.slice(0, 2).join(", ")}
                   </p>
                 </button>
@@ -888,10 +876,10 @@ export default function DashboardPage() {
             <SectionHeader icon={BarChart3} eyebrow="Connected system" title="Mission breakdown" />
             <div className="space-y-3">
               {missionProgress.breakdown.map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div key={item.label} className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
                   <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="font-medium text-gray-200">{item.label}</span>
-                    <span className="font-semibold text-white">{item.value}%</span>
+                    <span className="font-medium text-slate-700">{item.label}</span>
+                    <span className="font-semibold text-[#172033]">{item.value}%</span>
                   </div>
                   <Progress value={item.value} />
                   {item.source && <p className="mt-2 text-xs text-gray-500">{item.source}</p>}
@@ -909,7 +897,7 @@ export default function DashboardPage() {
               eyebrow="Mission Progress"
               title={missionProgress.mission}
             />
-            <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/55 p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
@@ -952,13 +940,13 @@ export default function DashboardPage() {
                   onClick={() => setSelectedCompany(company)}
                   className={`rounded-2xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
                     selectedCompany.company === company.company
-                      ? "border-purple-400/50 bg-purple-500/10 shadow-lg shadow-purple-950/20"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                      ? "border-sky-500/40 bg-sky-500/10"
+                      : "border-slate-800 bg-slate-900/55 hover:border-slate-700"
                   }`}
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="font-semibold text-white">{company.company}</h3>
-                    <span className="text-lg font-bold text-blue-200">
+                    <span className="text-lg font-bold text-sky-300">
                       {company.readiness}%
                     </span>
                   </div>
@@ -979,10 +967,10 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-            <div className="mt-5 rounded-2xl border border-blue-400/10 bg-blue-500/[0.05] p-5">
+            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900/55 p-5">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-blue-200/70">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
                     Detailed roadmap
                   </p>
                   <h3 className="mt-1 text-lg font-semibold text-white">
@@ -994,7 +982,7 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {selectedCompany.roadmap.map((step, index) => (
                   <div key={step} className="flex gap-3 text-sm text-gray-300">
-                    <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-400/10 text-xs font-semibold text-blue-200">
+                    <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-sky-300">
                       {index + 1}
                     </span>
                     <p className="leading-6">{step}</p>
@@ -1017,15 +1005,15 @@ export default function DashboardPage() {
                 <Link
                   key={`${item.time}-${item.title}`}
                   href={item.href}
-                  className="group grid gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-400/30 hover:bg-blue-500/[0.04] sm:grid-cols-[72px_1fr_auto]"
+                  className="group grid gap-4 rounded-2xl border border-slate-800 bg-slate-900/55 p-4 transition-colors duration-200 hover:border-slate-700 sm:grid-cols-[72px_1fr_auto]"
                 >
                   <div className="flex items-center gap-3 sm:block">
                     <p className="text-lg font-bold text-white">{item.time}</p>
-                    <div className="mt-0 hidden h-8 w-px bg-gradient-to-b from-purple-400 to-transparent sm:ml-5 sm:mt-2 sm:block" />
+                    <div className="mt-0 hidden h-8 w-px bg-slate-700 sm:ml-5 sm:mt-2 sm:block" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-500/10 text-xs font-semibold text-purple-200">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-sky-300">
                         {index + 1}
                       </span>
                       <h3 className="font-semibold text-white">{item.title}</h3>
@@ -1047,7 +1035,7 @@ export default function DashboardPage() {
                       </Badge>
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 self-center text-gray-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-200" />
+                  <ChevronRight className="h-5 w-5 self-center text-slate-600 transition-transform group-hover:translate-x-1 group-hover:text-sky-300" />
                 </Link>
               ))}
             </div>
@@ -1059,14 +1047,14 @@ export default function DashboardPage() {
               {coachSignalItems.map((signal) => (
                 <div
                   key={signal.insight}
-                  className="rounded-2xl border border-purple-400/10 bg-purple-500/[0.05] p-4"
+                  className="rounded-2xl border border-slate-800 bg-slate-900/55 p-4"
                 >
-                  <p className="text-sm leading-6 text-gray-200">{signal.insight}</p>
+                  <p className="text-sm leading-6 text-[#344054]">{signal.insight}</p>
                   <Button
                     asChild
                     size="sm"
                     variant="ghost"
-                    className="mt-3 h-8 rounded-full text-purple-200 hover:bg-purple-500/10"
+                    className="mt-3 h-8 rounded-full text-sky-300 hover:bg-slate-800"
                   >
                     <Link href={signal.href}>
                       {signal.action}
@@ -1090,7 +1078,7 @@ export default function DashboardPage() {
               {retentionItems.map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-center justify-between rounded-2xl bg-white/[0.03] px-4 py-3"
+                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/55 px-4 py-3"
                 >
                   <span className="text-sm text-gray-400">{stat.label}</span>
                   <span className="font-semibold text-white">{stat.value}</span>
@@ -1129,7 +1117,7 @@ export default function DashboardPage() {
               {leetcodeInsightItems.map((insight) => (
                 <div
                   key={insight.label}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                  className="rounded-2xl border border-slate-800 bg-slate-900/55 p-4"
                 >
                   <p className="text-xs text-gray-500">{insight.label}</p>
                   <p className="mt-2 text-base font-semibold text-white">
@@ -1150,7 +1138,7 @@ export default function DashboardPage() {
               {secondBrainSummary.map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/55 px-4 py-3"
                 >
                   <span className="text-sm text-gray-400">{item.label}</span>
                   <span className="text-sm font-semibold text-white">
@@ -1171,7 +1159,7 @@ export default function DashboardPage() {
             />
             <div className="grid gap-4 sm:grid-cols-2">
               {careerProgressItems.map((item) => (
-                <div key={item.label} className="rounded-2xl bg-white/[0.03] p-4">
+                <div key={item.label} className="rounded-2xl border border-slate-800 bg-slate-900/55 p-4">
                   <div className="mb-2 flex items-center justify-between text-sm">
                     <span className="text-gray-400">{item.label}</span>
                     <span className="font-semibold text-white">{item.value}%</span>
@@ -1185,7 +1173,7 @@ export default function DashboardPage() {
           <div className="grid gap-6">
             <GlassPanel>
               <SectionHeader icon={Zap} eyebrow="Focus Mode" title="Today's Focus" />
-              <div className="rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-5">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/55 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h3 className="text-3xl font-bold text-white">
@@ -1204,7 +1192,7 @@ export default function DashboardPage() {
                       </span>
                     </p>
                   </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-200">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-sky-300">
                     <GitBranch className="h-5 w-5" />
                   </div>
                 </div>
@@ -1239,7 +1227,7 @@ export default function DashboardPage() {
             {recentAchievementItems.map((achievement, index) => (
               <div
                 key={achievement}
-                className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-yellow-300/30"
+                className="relative rounded-2xl border border-slate-800 bg-slate-900/55 p-4 transition-colors duration-200 hover:border-slate-700"
               >
                 <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-yellow-300/10 text-yellow-200">
                   <Trophy className="h-4 w-4" />

@@ -247,20 +247,20 @@ export default function AICoachPage() {
   }
 
   return (
-    <main className="relative mx-auto max-w-7xl overflow-hidden p-5 lg:p-8">
-      <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-purple-600/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-56 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
+    <main className="zentric-page-shell relative mx-auto max-w-7xl overflow-hidden">
+      <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-200/35 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-56 h-72 w-72 rounded-full bg-emerald-100/45 blur-3xl" />
 
-      <section className="relative mb-6 overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-purple-500/15 via-blue-500/10 to-white/[0.02] p-6">
+      <section className="zentric-human-card relative mb-6 overflow-hidden rounded-[1.75rem] p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <Badge className="mb-4 border-purple-400/30 bg-purple-500/10 text-purple-100">
+            <Badge className="mb-4 border-[#CFE0F2] bg-[#EEF4FF] text-[#315F8F]">
               <BrainCircuit className="mr-1 h-3 w-3" />
               Central Intelligence
             </Badge>
-            <p className="text-sm text-blue-100">Hi, {coach.user.name}</p>
-            <h1 className="mt-2 text-3xl font-bold text-white md:text-5xl">AI Coach</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
+            <p className="text-sm text-[#315F8F]">Hi, {coach.user.name}</p>
+            <h1 className="mt-2 text-3xl font-bold text-[#172033] md:text-5xl">AI Coach</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-[#667085]">
               Not a chatbot — this is Zentric&apos;s mentor brain. It watches your roadmap, planner activity,
               completed topics, coding practice, Second Brain, and Career Hub progress to keep your growth plan accurate.
             </p>

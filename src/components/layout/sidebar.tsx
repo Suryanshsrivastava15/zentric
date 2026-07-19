@@ -51,60 +51,83 @@ function SidebarContent({
   userEmail,
   closeMobile,
 }: SidebarContentProps) {
+  const navGroups = [
+    { label: "Workspace", items: navigation.slice(0, 7) },
+    { label: "Growth", items: navigation.slice(7, 10) },
+    { label: "Account", items: navigation.slice(10) },
+  ];
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-6 py-5 border-b border-white/10">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600">
+      <div className="relative overflow-hidden border-b border-[#D9E3EE] px-6 py-5">
+        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#DCEBFA]" />
+        <div className="relative flex items-center gap-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#20364F]/10 bg-gradient-to-b from-[#315F8F] to-[#20364F] shadow-[0_12px_24px_rgba(39,76,119,0.18)]">
           <Zap className="w-4 h-4 text-white" />
         </div>
-        <span className="text-xl font-bold text-white tracking-tight">Zentric</span>
-        <span className="text-xs text-purple-400 font-medium ml-auto bg-purple-500/10 border border-purple-500/20 rounded-full px-2 py-0.5">
-          AI
+        <div>
+          <span className="block text-xl font-bold tracking-tight text-[#172033]">Zentric</span>
+          <span className="block text-[11px] font-medium text-[#667085]">Growth workspace</span>
+        </div>
+        <span className="ml-auto rounded-full border border-[#D9E3EE] bg-[#FFFDF9]/80 px-2 py-0.5 text-xs font-medium text-[#667085] shadow-sm">
+          beta
         </span>
+        </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={closeMobile}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
-                isActive
-                  ? "bg-gradient-to-r from-purple-500/20 to-blue-500/10 text-white border border-purple-500/30"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <item.icon
-                className={cn(
-                  "w-4 h-4 flex-shrink-0 transition-colors",
-                  isActive ? "text-purple-400" : "text-gray-500 group-hover:text-gray-300"
-                )}
-              />
-              {item.name}
-              {isActive && <div className="ml-auto w-1 h-1 rounded-full bg-purple-400" />}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#8A98A8]">
+              {group.label}
+            </p>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={closeMobile}
+                      className={cn(
+                      "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all",
+                      isActive
+                        ? "zentric-soft-active"
+                        : "text-[#667085] hover:bg-[#F7FAFD] hover:text-[#172033]"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-xl transition-colors",
+                        isActive ? "bg-gradient-to-b from-[#315F8F] to-[#20364F] text-white shadow-sm" : "bg-[#EEF3F8] text-[#8AA0B8] group-hover:bg-[#E5EEF8] group-hover:text-[#274C77]"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                    </span>
+                    {item.name}
+                    {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#274C77]" />}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
+      <div className="border-t border-[#D9E3EE] bg-gradient-to-b from-transparent to-[#F7FAFD] p-4">
+        <div className="mb-3 flex items-center gap-3 rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/85 p-3 shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#D9E3EE] bg-[#EDF3FB] text-sm font-bold text-[#172033]">
             {userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{userName || "User"}</p>
-            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+            <p className="text-sm font-medium text-[#172033] truncate">{userName || "User"}</p>
+            <p className="text-xs text-[#667085] truncate">{userEmail}</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-gray-400 hover:text-red-400 hover:bg-red-400/10"
+          className="w-full justify-start text-[#667085] hover:text-red-600 hover:bg-red-50"
           onClick={() => signOut({ callbackUrl: "/auth/signin" })}
         >
           <LogOut className="w-4 h-4 mr-2" />
@@ -124,7 +147,7 @@ export function Sidebar() {
     <>
       {/* Mobile toggle button */}
       <button
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-gray-900 border border-white/10 text-white"
+        className="fixed left-4 top-4 z-50 rounded-xl border border-[#D9E3EE] bg-[#FFFDF9] p-2 text-[#172033] shadow-sm md:hidden"
         onClick={() => setMobileOpen(!mobileOpen)}
       >
         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -141,7 +164,7 @@ export function Sidebar() {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-full w-64 bg-gray-950 border-r border-white/10 transform transition-transform duration-300 md:hidden",
+          "fixed left-0 top-0 z-40 h-full w-64 transform border-r border-[#D9E3EE] bg-[#FFFDF9]/95 backdrop-blur-xl transition-transform duration-300 md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -154,7 +177,7 @@ export function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 flex-col h-screen fixed left-0 top-0 bg-gray-950 border-r border-white/10 z-30">
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 flex-col border-r border-[#D9E3EE] bg-[#FFFDF9]/92 shadow-[18px_0_55px_rgba(33,62,92,0.07)] backdrop-blur-xl md:flex">
         <SidebarContent
           pathname={pathname}
           userName={session?.user?.name}

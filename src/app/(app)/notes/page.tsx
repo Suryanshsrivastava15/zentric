@@ -792,17 +792,17 @@ export default function NotesPage() {
   const selectedCategory = getCategory(editForm.category);
 
   return (
-    <main className="flex min-h-full flex-col bg-gray-950">
-      <header className="border-b border-white/8 px-5 py-5 lg:px-7">
+    <main className="zentric-page-shell flex min-h-full flex-col">
+      <header className="zentric-human-card rounded-[1.5rem] px-5 py-5 lg:px-7">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 shadow-lg shadow-purple-500/20">
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#315F8F] to-[#20364F] shadow-lg shadow-blue-200/70">
                 <Brain className="size-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Second Brain</h1>
-                <p className="text-sm text-gray-400">
+                <h1 className="text-2xl font-bold text-[#172033]">Second Brain</h1>
+                <p className="text-sm text-[#667085]">
                   Turn scattered thoughts into organized knowledge you can reuse.
                 </p>
               </div>
@@ -822,7 +822,7 @@ export default function NotesPage() {
             </div>
             <Button
               onClick={() => startCreate()}
-              className="border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+              className="zentric-primary-action"
             >
               <Plus className="mr-2 size-4" />
               New note
@@ -843,15 +843,15 @@ export default function NotesPage() {
         </div>
       )}
 
-      <section className="mx-auto grid w-full max-w-[1600px] gap-4 px-5 py-5 lg:px-7 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[1.4rem] border border-purple-400/20 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-transparent p-5">
+      <section className="mx-auto grid w-full max-w-[1600px] gap-4 py-5 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="zentric-human-card rounded-[1.4rem] p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <Badge className="mb-3 border-purple-400/30 bg-purple-400/10 text-purple-100">
+              <Badge className="mb-3 border-[#CFE0F2] bg-[#EEF4FF] text-[#315F8F]">
                 AI Memory System
               </Badge>
-              <h2 className="text-xl font-bold text-white">Your learning memory, connected to your growth mission.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+              <h2 className="text-xl font-bold text-[#172033]">Your learning memory, connected to your growth mission.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">
                 Second Brain now stores learning notes, interview reports, project decisions, research,
                 flashcards, revision signals, and knowledge links that AI Coach can use.
               </p>
@@ -859,7 +859,7 @@ export default function NotesPage() {
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={createMemoryPackDraft}
-                className="border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                className="zentric-primary-action"
               >
                 <Brain className="mr-2 size-4" />
                 Create Memory Pack
@@ -868,7 +868,7 @@ export default function NotesPage() {
                 onClick={sendRevisionToPlanner}
                 disabled={savingMemoryAction}
                 variant="outline"
-                className="border-emerald-400/30 text-emerald-100"
+                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
               >
                 {savingMemoryAction ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Repeat2 className="mr-2 size-4" />}
                 Send Revision to Planner
@@ -884,14 +884,14 @@ export default function NotesPage() {
             <MemoryStat icon={Network} label="Connections" value={String(knowledgeConnections.length)} />
           </div>
 
-          <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div className="mt-5 rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 p-4 shadow-sm">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <ClipboardList className="size-4 text-purple-300" />
+                <p className="flex items-center gap-2 text-sm font-semibold text-[#172033]">
+                  <ClipboardList className="size-4 text-[#315F8F]" />
                   Smart capture actions
                 </p>
-                <p className="mt-1 text-xs leading-5 text-gray-500">
+                <p className="mt-1 text-xs leading-5 text-[#667085]">
                   Use these after a learning session, interview simulation, project update, or research session so AI Coach gets clean memory.
                 </p>
               </div>
@@ -902,19 +902,19 @@ export default function NotesPage() {
               )}
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <Button onClick={() => createSmartDraft("learning_recap")} variant="outline" className="justify-start border-blue-400/25 text-blue-100">
+              <Button onClick={() => createSmartDraft("learning_recap")} variant="outline" className="justify-start border-blue-200 text-blue-700 hover:bg-blue-50">
                 <BookOpenCheck className="mr-2 size-4" />
                 Learning Recap
               </Button>
-              <Button onClick={() => createSmartDraft("interview_story")} variant="outline" className="justify-start border-orange-400/25 text-orange-100">
+              <Button onClick={() => createSmartDraft("interview_story")} variant="outline" className="justify-start border-orange-200 text-orange-700 hover:bg-orange-50">
                 <BriefcaseBusiness className="mr-2 size-4" />
                 Interview Story
               </Button>
-              <Button onClick={() => createSmartDraft("project_evidence")} variant="outline" className="justify-start border-emerald-400/25 text-emerald-100">
+              <Button onClick={() => createSmartDraft("project_evidence")} variant="outline" className="justify-start border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                 <CheckCircle2 className="mr-2 size-4" />
                 Project Evidence
               </Button>
-              <Button onClick={() => createSmartDraft("research_digest")} variant="outline" className="justify-start border-cyan-400/25 text-cyan-100">
+              <Button onClick={() => createSmartDraft("research_digest")} variant="outline" className="justify-start border-cyan-200 text-cyan-700 hover:bg-cyan-50">
                 <Microscope className="mr-2 size-4" />
                 Research Digest
               </Button>
@@ -923,23 +923,23 @@ export default function NotesPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-          <div className="rounded-[1.4rem] border border-blue-400/20 bg-blue-400/10 p-4">
+          <div className="zentric-panel rounded-[1.4rem] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Brain className="size-4 text-blue-200" />
-              <p className="font-semibold text-white">What Zentric Remembers</p>
+              <Brain className="size-4 text-[#315F8F]" />
+              <p className="font-semibold text-[#172033]">What Zentric Remembers</p>
             </div>
-            <div className="space-y-2 text-sm leading-6 text-gray-300">
+            <div className="space-y-2 text-sm leading-6 text-[#344054]">
               <p>{memoryBrief.remembers}</p>
-              <p className="text-gray-500">{memoryBrief.coverage}</p>
+              <p className="text-[#667085]">{memoryBrief.coverage}</p>
             </div>
           </div>
 
-          <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.035] p-4">
+          <div className="zentric-panel rounded-[1.4rem] p-4">
             <div className="mb-3 flex items-center gap-2">
               <Lightbulb className="size-4 text-yellow-300" />
-              <p className="font-semibold text-white">Next Memory Action</p>
+              <p className="font-semibold text-[#172033]">Next Memory Action</p>
             </div>
-            <p className="text-sm leading-6 text-gray-400">
+            <p className="text-sm leading-6 text-[#667085]">
               {revisionQueue[0]
                 ? `Revise "${revisionQueue[0].title}" today so the knowledge does not fade.`
                 : recentLearning
@@ -948,14 +948,14 @@ export default function NotesPage() {
             </p>
           </div>
 
-          <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.035] p-4">
+          <div className="zentric-panel rounded-[1.4rem] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Network className="size-4 text-cyan-300" />
-              <p className="font-semibold text-white">Strongest Connections</p>
+              <Network className="size-4 text-cyan-700" />
+              <p className="font-semibold text-[#172033]">Strongest Connections</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {knowledgeConnections.length === 0 ? (
-                <span className="text-sm text-gray-500">Add tags like graph, resume, project, react, interview.</span>
+                <span className="text-sm text-[#667085]">Add tags like graph, resume, project, react, interview.</span>
               ) : knowledgeConnections.slice(0, 5).map((item) => (
                 <Badge key={item.label} className="border-cyan-400/30 bg-cyan-400/10 text-cyan-100">
                   {item.label} · {item.count}
@@ -964,20 +964,20 @@ export default function NotesPage() {
             </div>
           </div>
 
-          <div className="rounded-[1.4rem] border border-emerald-400/20 bg-emerald-400/10 p-4">
+          <div className="zentric-panel rounded-[1.4rem] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <BriefcaseBusiness className="size-4 text-emerald-200" />
-              <p className="font-semibold text-white">Career Evidence</p>
+              <BriefcaseBusiness className="size-4 text-emerald-700" />
+              <p className="font-semibold text-[#172033]">Career Evidence</p>
             </div>
             <div className="space-y-2">
               {careerEvidence.length === 0 ? (
-                <p className="text-sm leading-6 text-gray-500">
+                <p className="text-sm leading-6 text-[#667085]">
                   Add project or interview notes. Zentric will extract resume proof and interview stories from them.
                 </p>
               ) : careerEvidence.slice(0, 3).map((item) => (
-                <div key={item.title} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <p className="text-sm font-medium text-white">{item.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-gray-400">{item.proof}</p>
+                <div key={item.title} className="rounded-xl border border-[#D9E3EE] bg-[#FFFDF9] p-3">
+                  <p className="text-sm font-medium text-[#172033]">{item.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#667085]">{item.proof}</p>
                 </div>
               ))}
             </div>
@@ -985,22 +985,22 @@ export default function NotesPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 xl:grid-cols-[230px_330px_minmax(0,1fr)]">
-        <aside className="border-b border-white/8 p-4 xl:border-b-0 xl:border-r">
+      <div className="zentric-human-card mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 overflow-hidden rounded-[1.5rem] xl:grid-cols-[230px_330px_minmax(0,1fr)]">
+        <aside className="border-b border-[#D9E3EE] p-4 xl:border-b-0 xl:border-r">
           <button
             onClick={() => setActiveFilter("all")}
             className={`mb-3 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
               activeFilter === "all"
-                ? "border-white/20 bg-white/10"
-                : "border-transparent hover:bg-white/5"
+                ? "zentric-soft-active"
+                : "border-transparent hover:bg-[#F4F8FC]"
             }`}
           >
-            <Inbox className="size-4 text-gray-300" />
-            <span className="flex-1 text-sm font-medium text-gray-200">All notes</span>
-            <span className="text-xs text-gray-600">{notes.length}</span>
+            <Inbox className="size-4 text-[#667085]" />
+            <span className="flex-1 text-sm font-medium text-[#344054]">All notes</span>
+            <span className="text-xs text-[#667085]">{notes.length}</span>
           </button>
 
-          <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
+          <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8A98A8]">
             Knowledge spaces
           </p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
@@ -1014,7 +1014,7 @@ export default function NotesPage() {
                   className={`rounded-xl border p-3 text-left transition ${
                     isActive
                       ? `${category.border} ${category.bg}`
-                      : "border-transparent hover:border-white/8 hover:bg-white/[0.035]"
+                      : "border-transparent hover:border-[#D9E3EE] hover:bg-[#F4F8FC]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -1022,10 +1022,10 @@ export default function NotesPage() {
                       <Icon className={`size-4 ${category.color}`} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-200">
+                      <p className="truncate text-sm font-medium text-[#344054]">
                         {category.shortName}
                       </p>
-                      <p className="text-[11px] text-gray-600">{counts[category.id]} notes</p>
+                      <p className="text-[11px] text-[#667085]">{counts[category.id]} notes</p>
                     </div>
                   </div>
                 </button>
@@ -1034,18 +1034,18 @@ export default function NotesPage() {
           </div>
         </aside>
 
-        <section className="min-h-[320px] border-b border-white/8 p-3 xl:border-b-0 xl:border-r">
+        <section className="min-h-[320px] border-b border-[#D9E3EE] p-3 xl:border-b-0 xl:border-r">
           <div className="mb-3 flex items-center justify-between px-2">
             <div>
-              <h2 className="text-sm font-semibold text-white">
+              <h2 className="text-sm font-semibold text-[#172033]">
                 {activeFilter === "all" ? "All notes" : getCategory(activeFilter).name}
               </h2>
-              <p className="text-xs text-gray-600">{visibleNotes.length} results</p>
+              <p className="text-xs text-[#667085]">{visibleNotes.length} results</p>
             </div>
             {activeFilter !== "all" && (
               <button
                 onClick={() => startCreate(activeFilter)}
-                className="flex size-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-white/5 hover:text-white"
+                className="flex size-8 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F4F8FC] hover:text-[#172033]"
                 aria-label={`Create ${getCategory(activeFilter).name}`}
               >
                 <Plus className="size-4" />
@@ -1069,7 +1069,7 @@ export default function NotesPage() {
                 }
                 className="p-5"
                 action={
-                  <Button onClick={() => startCreate()} size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                  <Button onClick={() => startCreate()} size="sm" className="zentric-primary-action">
                     <Plus className="size-4" />
                     Capture note
                   </Button>
@@ -1085,7 +1085,7 @@ export default function NotesPage() {
                     className={`group rounded-xl border p-3 transition ${
                       selectedNote?.id === note.id
                         ? `${category.border} ${category.bg}`
-                        : "border-white/7 bg-white/[0.025] hover:border-white/12 hover:bg-white/[0.045]"
+                        : "border-[#D9E3EE] bg-[#FFFDF9]/70 hover:border-[#B8CCE2] hover:bg-[#F4F8FC]"
                     }`}
                   >
                     <div
@@ -1099,7 +1099,7 @@ export default function NotesPage() {
                     >
                       <div className="mb-2 flex items-start gap-2">
                         <Icon className={`mt-0.5 size-3.5 shrink-0 ${category.color}`} />
-                        <p className="min-w-0 flex-1 truncate text-sm font-medium text-white">
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium text-[#172033]">
                           {note.title}
                         </p>
                         <button
@@ -1108,19 +1108,19 @@ export default function NotesPage() {
                             deleteNote(note.id);
                           }}
                           aria-label={`Delete ${note.title}`}
-                          className="opacity-0 text-gray-600 transition hover:text-red-400 group-hover:opacity-100"
+                          className="opacity-0 text-[#667085] transition hover:text-red-600 group-hover:opacity-100"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
                       </div>
-                      <p className="line-clamp-3 text-xs leading-5 text-gray-500">
+                      <p className="line-clamp-3 text-xs leading-5 text-[#667085]">
                         {note.content || "Empty note"}
                       </p>
                       <div className="mt-3 flex items-center justify-between">
                         <span className={`text-[10px] font-medium ${category.color}`}>
                           {category.shortName}
                         </span>
-                        <span className="flex items-center gap-1 text-[10px] text-gray-700">
+                        <span className="flex items-center gap-1 text-[10px] text-[#8A98A8]">
                           <Clock3 className="size-2.5" />
                           {formatRelativeTime(note.updatedAt)}
                         </span>
@@ -1136,7 +1136,7 @@ export default function NotesPage() {
         <section className="min-h-[520px]">
           {isCreating || selectedNote ? (
             <div className="flex h-full min-h-[520px] flex-col">
-              <div className="flex flex-col gap-3 border-b border-white/8 px-5 py-4 sm:flex-row sm:items-center">
+              <div className="flex flex-col gap-3 border-b border-[#D9E3EE] px-5 py-4 sm:flex-row sm:items-center">
                 <Input
                   aria-label="Note title"
                   value={editForm.title}
@@ -1144,7 +1144,7 @@ export default function NotesPage() {
                     setEditForm((current) => ({ ...current, title: event.target.value }))
                   }
                   placeholder="Give this note a clear title..."
-                  className="h-10 flex-1 border-0 bg-transparent px-0 text-lg font-semibold text-white focus-visible:ring-0"
+                  className="h-10 flex-1 border-0 bg-transparent px-0 text-lg font-semibold text-[#172033] shadow-none focus-visible:ring-0"
                 />
                 <div className="flex items-center gap-2">
                   <Select
@@ -1173,7 +1173,7 @@ export default function NotesPage() {
                   <Button
                     onClick={saveNote}
                     disabled={saving || !editForm.title.trim()}
-                    className="h-9 border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                    className="h-9 zentric-primary-action"
                   >
                     {saving ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -1187,8 +1187,8 @@ export default function NotesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 border-b border-white/5 px-5 py-2">
-                <Hash className="size-3.5 text-gray-600" />
+              <div className="flex items-center gap-2 border-b border-[#D9E3EE] px-5 py-2">
+                <Hash className="size-3.5 text-[#667085]" />
                 <Input
                   aria-label="Note tags"
                   value={editForm.tags}
@@ -1196,7 +1196,7 @@ export default function NotesPage() {
                     setEditForm((current) => ({ ...current, tags: event.target.value }))
                   }
                   placeholder="Tags separated by commas"
-                  className="h-8 border-0 bg-transparent px-0 text-xs text-gray-400 focus-visible:ring-0"
+                  className="h-8 border-0 bg-transparent px-0 text-xs text-[#667085] shadow-none focus-visible:ring-0"
                 />
               </div>
 
@@ -1208,25 +1208,25 @@ export default function NotesPage() {
                     setEditForm((current) => ({ ...current, content: event.target.value }))
                   }
                   placeholder={selectedCategory.placeholder}
-                  className="min-h-[420px] resize-none border-0 bg-transparent p-0 text-sm leading-7 text-gray-300 focus-visible:ring-0 xl:h-full"
+                  className="min-h-[420px] resize-none border-0 bg-transparent p-0 text-sm leading-7 text-[#344054] shadow-none focus-visible:ring-0 xl:h-full"
                 />
               </div>
             </div>
           ) : (
             <div className="flex min-h-[520px] items-center justify-center p-6">
               <div className="w-full max-w-3xl">
-                <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10">
-                  <Sparkles className="size-7 text-purple-300" />
+                <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-2xl border border-[#D9E3EE] bg-[#EEF4FF]">
+                  <Sparkles className="size-7 text-[#315F8F]" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-xl font-semibold text-white">Build your AI memory layer</h2>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+                  <h2 className="text-xl font-semibold text-[#172033]">Build your AI memory layer</h2>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#667085]">
                     Capture what matters, connect it with tags, and let Zentric turn notes into
                     flashcards, revision, and career evidence.
                   </p>
                   <Button
                     onClick={() => startCreate()}
-                    className="mt-5 border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                    className="mt-5 zentric-primary-action"
                   >
                     <Plus className="mr-2 size-4" />
                     Capture a note
@@ -1282,20 +1282,20 @@ export default function NotesPage() {
 
 function MemoryStat({ icon: Icon, label, value }: { icon: ElementType; label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <Icon className="mb-3 size-4 text-purple-300" />
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
+    <div className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/80 p-4 shadow-sm">
+      <Icon className="mb-3 size-4 text-[#315F8F]" />
+      <p className="text-2xl font-bold text-[#172033]">{value}</p>
+      <p className="text-xs text-[#667085]">{label}</p>
     </div>
   );
 }
 
 function MemoryPanel({ title, icon: Icon, children }: { title: string; icon: ElementType; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+    <div className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/70 p-4">
       <div className="mb-3 flex items-center gap-2">
-        <Icon className="size-4 text-blue-300" />
-        <p className="text-sm font-semibold text-white">{title}</p>
+        <Icon className="size-4 text-[#315F8F]" />
+        <p className="text-sm font-semibold text-[#172033]">{title}</p>
       </div>
       <div className="space-y-2">{children}</div>
     </div>
