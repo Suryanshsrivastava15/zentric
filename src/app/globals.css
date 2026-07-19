@@ -258,6 +258,60 @@
     color: #1f2a37 !important;
   }
 
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-white"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#FFFDF9]"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#fffdf9]"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#F7FAFD]"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#f7fafd]"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#F4F8FC]"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#f4f8fc]"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-slate-50"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-slate-100"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-gray-50"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-gray-100"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-transparent"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-blue-50"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-cyan-50"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-emerald-50"],
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-purple-50"] {
+    color: #172033 !important;
+  }
+
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-white"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#FFFDF9]"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#fffdf9]"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#F7FAFD]"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#f7fafd]"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#F4F8FC]"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-[#f4f8fc]"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-slate-50"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-slate-100"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-gray-50"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-gray-100"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-transparent"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-blue-50"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-cyan-50"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-emerald-50"] *,
+  .zentric-light-main :is(button, a[role="button"], a[class*="rounded"])[class*="bg-purple-50"] * {
+    color: inherit !important;
+  }
+
+  .zentric-light-main :is(button, a[role="button"])[class*="zentric-primary-action"],
+  .zentric-light-main :is(button, a[role="button"])[class*="bg-gradient"],
+  .zentric-light-main :is(button, a[role="button"])[class*="from-[#274c77]"],
+  .zentric-light-main :is(button, a[role="button"])[class*="from-[#315F8F]"],
+  .zentric-light-main :is(button, a[role="button"])[class*="from-[#315f8f]"] {
+    color: #ffffff !important;
+  }
+
+  .zentric-light-main :is(button, a[role="button"])[class*="zentric-primary-action"] *,
+  .zentric-light-main :is(button, a[role="button"])[class*="bg-gradient"] *,
+  .zentric-light-main :is(button, a[role="button"])[class*="from-[#274c77]"] *,
+  .zentric-light-main :is(button, a[role="button"])[class*="from-[#315F8F]"] *,
+  .zentric-light-main :is(button, a[role="button"])[class*="from-[#315f8f]"] * {
+    color: inherit !important;
+  }
+
   .zentric-light-main :is(input, textarea, select) {
     background-color: #fffdf9 !important;
     color: #1f2a37 !important;
