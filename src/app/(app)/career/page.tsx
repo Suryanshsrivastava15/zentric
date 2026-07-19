@@ -1085,10 +1085,10 @@ export default function CareerHubPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex min-w-fit items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
+              className={`flex min-w-fit items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 active
-                  ? "zentric-soft-active"
-                  : "text-[#667085] hover:bg-[#F4F8FC] hover:text-[#172033]"
+                  ? "border border-[#20364F]/10 bg-[#20364F] !text-white shadow-[0_10px_24px_rgba(32,54,79,0.18)]"
+                  : "border border-[#D9E3EE] bg-[#FFFDF9] !text-[#172033] shadow-sm hover:border-[#B8CCE2] hover:bg-[#EDF4FB]"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -1099,13 +1099,13 @@ export default function CareerHubPage() {
       </div>
 
       {message && (
-        <div className="mb-5 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
           {message}
         </div>
       )}
 
       {!loading && !isAnalyzed && (
-        <div className="mb-5 rounded-2xl border border-yellow-400/20 bg-yellow-400/10 px-4 py-3 text-sm leading-6 text-yellow-100">
+        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
           Resume scores are not analyzed yet because no resume has been uploaded. Upload your resume to generate analysis.
         </div>
       )}
@@ -1120,7 +1120,7 @@ export default function CareerHubPage() {
             <div className="space-y-5">
               <Card className="overflow-hidden border-purple-400/20 bg-gradient-to-br from-purple-500/[0.12] via-blue-500/[0.06] to-white/[0.02]">
                 <CardHeader>
-                  <Badge className="w-fit border-purple-400/30 bg-purple-400/10 text-purple-100">
+                  <Badge className="w-fit border-[#BFD2E6] bg-[#EDF4FB] !text-[#274C77]">
                     Career Mission Setup
                   </Badge>
                   <CardTitle className="text-2xl">Dream Career Target</CardTitle>
@@ -1178,8 +1178,8 @@ export default function CareerHubPage() {
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-sm leading-6 text-gray-300">
+                  <div className="rounded-2xl border border-[#D9E3EE] bg-[#FFFDF9]/90 p-4 shadow-sm">
+                    <p className="text-sm leading-6 text-[#334155]">
                       <span className="font-medium text-[#172033]">Active mission:</span>{" "}
                       {profile.dreamRole || "Dream Role"} at {profile.targetCompany || "Target Company"}.
                       Zentric uses this target to calculate role match, company readiness, interview mode,
@@ -1201,7 +1201,7 @@ export default function CareerHubPage() {
                           setMessage(`Interview Prep synced to ${profile.dreamRole} at ${profile.targetCompany}.`);
                         }}
                         variant="outline"
-                        className="border-purple-400/30 text-purple-100"
+                        className="border-[#C8D8EA] bg-[#FFFDF9] !text-[#172033] hover:bg-[#EDF4FB]"
                       >
                         Open Synced Interview Prep
                       </Button>
@@ -1209,11 +1209,11 @@ export default function CareerHubPage() {
                   </div>
 
                   {missionPlanTopics.length > 0 && (
-                    <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
-                      <p className="mb-3 text-sm font-semibold text-blue-100">Mission focus areas</p>
+                    <div className="rounded-2xl border border-[#BFD2E6] bg-[#EDF4FB]/80 p-4">
+                      <p className="mb-3 text-sm font-semibold text-[#274C77]">Mission focus areas</p>
                       <div className="flex flex-wrap gap-2">
                         {missionPlanTopics.map((topic) => (
-                          <Badge key={topic} className="border-blue-400/30 bg-blue-400/10 text-blue-100">
+                          <Badge key={topic} className="border-[#BFD2E6] bg-[#FFFDF9] !text-[#274C77]">
                             {topic}
                           </Badge>
                         ))}
