@@ -131,7 +131,7 @@ export interface CreateNoteInput {
   category?: string;
 }
 
-export type UpdateNoteInput = Partial<CreateNoteInput>;
+export interface UpdateNoteInput extends Partial<CreateNoteInput> {}
 
 export interface CreateStudyTopicInput {
   name: string;
