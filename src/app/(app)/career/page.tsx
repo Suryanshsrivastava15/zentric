@@ -115,6 +115,7 @@ const tabs = [
 ] as const;
 
 const companyOptions = ["Google", "Amazon", "Microsoft", "Atlassian", "Adobe", "Uber"];
+const showLegacyResumeSection = false;
 
 const interviewModes = [
   {
@@ -1153,6 +1154,245 @@ export default function CareerHubPage() {
       ) : (
         <>
           {activeTab === "resume" && (
+            <div className="space-y-5">
+              <Card className="zentric-human-card overflow-hidden">
+                <CardHeader className="border-b border-[#D6E4F5]">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <Badge className="mb-3 w-fit border-[#C7D9EE] bg-[#EEF4FF] text-[#315F8F]">
+                        Resume Intelligence
+                      </Badge>
+                      <CardTitle className="text-2xl">Upload resume. Get the exact fixes.</CardTitle>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">
+                        A cleaner resume workspace: one upload, one score, clear weak areas, better bullet suggestions,
+                        and a target-role match.
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-[#D6E4F5] bg-[#FFFDF9] px-4 py-3 text-left shadow-sm lg:min-w-[220px]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#667085]">Resume status</p>
+                      <p className={hasResumeUpload ? "mt-1 text-sm font-bold text-emerald-700" : "mt-1 text-sm font-bold text-amber-800"}>
+                        {hasResumeUpload ? "Resume uploaded" : "Waiting for upload"}
+                      </p>
+                      <p className="mt-1 text-xs text-[#667085]">
+                        {hasResumeUpload ? `${resumeWordCount} words extracted` : "Upload to unlock analysis"}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-5 p-6">
+                  <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+                    <Field label="Dream Role">
+                      <Input
+                        value={profile.dreamRole}
+                        onChange={(event) => setProfile({ ...profile, dreamRole: event.target.value })}
+                        placeholder="e.g. Software Engineer Intern"
+                      />
+                    </Field>
+                    <Field label="Target Company">
+                      <Input
+                        value={profile.targetCompany}
+                        onChange={(event) => setProfile({ ...profile, targetCompany: event.target.value })}
+                        placeholder="e.g. Google, Amazon, Microsoft"
+                      />
+                    </Field>
+                    <Button
+                      onClick={() => saveProfile()}
+                      disabled={saving || !profile.dreamRole.trim() || !profile.targetCompany.trim()}
+                      className="zentric-primary-action"
+                    >
+                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
+                      Save Target
+                    </Button>
+                  </div>
+
+                  <label className="group flex cursor-pointer flex-col items-center justify-center rounded-[1.35rem] border border-dashed border-[#A8BFD8] bg-[#F8FBFF] px-6 py-9 text-center transition hover:border-[#315F8F] hover:bg-[#EEF4FF]">
+                    <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#20364F] text-white shadow-lg shadow-blue-950/10 transition group-hover:scale-105">
+                      {resumeUploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <FileUp className="h-6 w-6" />}
+                    </span>
+                    <span className="text-base font-semibold text-[#172033]">
+                      {resumeUploading ? "Reading your resume..." : hasResumeUpload ? "Replace or re-analyze resume" : "Upload your resume"}
+                    </span>
+                    <span className="mt-2 max-w-xl text-sm leading-6 text-[#667085]">
+                      PDF, DOCX, DOC, TXT, MD, CSV, or JSON. Zentric extracts the text and then shows only useful resume actions.
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
+                      onChange={(event) => {
+                        uploadResume(event.target.files?.[0]);
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+
+                  {!isAnalyzed && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                      Upload your resume first. After upload, Zentric will show your score, strong points, weak areas,
+                      missing skills, rewrite suggestions, and target-role match.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+                <Card className="zentric-human-card">
+                  <CardHeader>
+                    <CardTitle>Resume Strength Score</CardTitle>
+                    <p className="text-sm leading-6 text-[#667085]">
+                      One main score based on ATS-style signals, role fit, sections, keywords, impact, and project proof.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <BigScore value={analysis?.resumeScore} label="Resume Strength" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <ResumeInsightTile title="Matched Skills" value={isAnalyzed ? `${matchedKeywordCount}` : "Locked"} description="Skills found in resume." />
+                      <ResumeInsightTile title="Missing Skills" value={isAnalyzed ? `${missingKeywordCount}` : "Locked"} description="Skills to add or learn." />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="zentric-human-card">
+                  <CardHeader>
+                    <CardTitle>Score Breakdown</CardTitle>
+                    <p className="text-sm leading-6 text-[#667085]">
+                      Recruiter-style areas that explain why the score is high or low.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {(analysis?.scoreBreakdown ?? []).length > 0 ? (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {(analysis?.scoreBreakdown ?? []).map((item) => (
+                          <ScoreBreakdownRow key={item.label} item={item} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4 text-sm text-[#667085]">
+                        Upload your resume to unlock structure, skills, projects, experience, metrics, and ATS friendliness.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Card className="zentric-human-card">
+                  <CardHeader>
+                    <CardTitle>What is Good</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SectionList title="Strong Points" items={analysis?.strongSections ?? []} positive />
+                  </CardContent>
+                </Card>
+
+                <Card className="zentric-human-card">
+                  <CardHeader>
+                    <CardTitle>What to Improve</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <SectionList title="Weak Areas" items={analysis?.needsImprovement ?? []} />
+                    <div className="flex flex-wrap gap-2">
+                      {(analysis?.missingKeywords ?? []).slice(0, 8).map((keyword) => (
+                        <Badge key={keyword} className="border-amber-200 bg-amber-50 text-amber-800">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+                <Card className="zentric-human-card">
+                  <CardHeader>
+                    <CardTitle>AI Rewrite Suggestions</CardTitle>
+                    <p className="text-sm leading-6 text-[#667085]">
+                      Turn basic resume lines into stronger, measurable, recruiter-ready bullets.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#667085]">Weak style</p>
+                      <p className="mt-2 text-sm text-[#172033]">Made a project using Next.js and AI.</p>
+                    </div>
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Better version</p>
+                      <p className="mt-2 text-sm leading-6 text-[#172033]">
+                        {analysis?.suggestedBullet || "Built an AI-assisted growth operating system using Next.js, TypeScript, Prisma, PostgreSQL, and AI workflows to personalize learning, interview preparation, and career readiness."}
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {(analysis?.suggestions ?? []).length === 0 ? (
+                        <p className="text-sm leading-6 text-[#667085]">Upload your resume to get targeted rewrite suggestions.</p>
+                      ) : (analysis?.suggestions ?? []).slice(0, 4).map((suggestion) => (
+                        <div key={suggestion} className="flex gap-3 rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3 text-sm leading-6 text-[#334155]">
+                          <WandSparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#315F8F]" />
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="zentric-human-card">
+                  <CardHeader>
+                    <CardTitle>Target Role Match</CardTitle>
+                    <p className="text-sm leading-6 text-[#667085]">
+                      Your resume compared with your saved dream role and target company.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="rounded-2xl border border-[#D6E4F5] bg-[#F8FBFF] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#667085]">Target</p>
+                      <p className="mt-2 text-lg font-bold text-[#172033]">
+                        {profile.dreamRole || "Dream Role"} at {profile.targetCompany || "Target Company"}
+                      </p>
+                    </div>
+                    <BigScore value={analysis?.resumeMatch ?? analysis?.atsScore ?? analysis?.resumeScore} label="Resume Match" />
+                    <div>
+                      <p className="mb-2 text-sm font-semibold text-[#172033]">Recommended next actions</p>
+                      <div className="space-y-2">
+                        {(analysis?.recommendedLearningPath ?? []).slice(0, 4).map((item) => (
+                          <div key={`${item.topic}-${item.action}`} className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3">
+                            <p className="text-sm font-semibold text-[#172033]">{item.topic}</p>
+                            <p className="mt-1 text-xs leading-5 text-[#667085]">{item.action}</p>
+                          </div>
+                        ))}
+                        {(analysis?.recommendedLearningPath ?? []).length === 0 && (
+                          <p className="rounded-xl border border-[#D6E4F5] bg-[#FFFDF9] p-3 text-sm leading-6 text-[#667085]">
+                            Upload resume and save your target to get role-specific next actions.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        onClick={addCareerMissionToPlanner}
+                        disabled={savingMissionPlan || !profile.dreamRole.trim() || !profile.targetCompany.trim()}
+                        className="zentric-primary-action"
+                      >
+                        {savingMissionPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
+                        Add Fix Plan to Planner
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          syncMissionToInterview(profile);
+                          setActiveTab("interview");
+                          setMessage(`Interview Prep synced to ${profile.dreamRole} at ${profile.targetCompany}.`);
+                        }}
+                        variant="outline"
+                        className="border-[#C7D9EE] bg-[#FFFDF9] text-[#315F8F]"
+                      >
+                        Practice Resume Interview
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {showLegacyResumeSection && (
             <div className="space-y-5">
               <Card className="overflow-hidden border-purple-400/20 bg-gradient-to-br from-purple-500/[0.12] via-blue-500/[0.06] to-white/[0.02]">
                 <CardHeader>
